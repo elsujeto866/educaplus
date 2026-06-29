@@ -11,5 +11,29 @@ import { env } from '@/config/env';
  *
  * All tenant-scoped queries MUST go through withTenant() in ./with-tenant.ts,
  * never directly through this `db` instance — that is the only RLS-safe path.
+ *
+ * LAZY INITIALIZATION: the Pool and drizzle instance are created on first
+ * property access, not at module evaluation time. This keeps `next build` safe
+ * when env vars are not present (e.g. CI build without live credentials), while
+ * still failing loudly at runtime when DATABASE_URL is actually needed.
  */
-export const db = drizzle(new Pool({ connectionString: env.DATABASE_URL }));
+function makeDb() {
+  return drizzle(new Pool({ connectionString: env.DATABASE_URL }));
+}
+
+type Db = ReturnType<typeof makeDb>;
+
+let _db: Db | undefined;
+
+function getInstance(): Db {
+  if (!_db) {
+    _db = makeDb();
+  }
+  return _db;
+}
+
+export const db: Db = new Proxy({} as Db, {
+  get(_target, prop: PropertyKey) {
+    return getInstance()[prop as keyof Db];
+  },
+});
