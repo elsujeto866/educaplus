@@ -1,18 +1,85 @@
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
+import { defineConfig, globalIgnores } from 'eslint/config';
+import nextVitals from 'eslint-config-next/core-web-vitals';
+import nextTs from 'eslint-config-next/typescript';
+import boundaries from 'eslint-plugin-boundaries';
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
+    '.next/**',
+    'out/**',
+    'build/**',
+    'next-env.d.ts',
+    'drizzle/**',
+    'tests/**',
   ]),
+
+  // Allow _-prefixed args/vars to be unused (intentional "void" params).
+  {
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+
+  // Hexagonal boundary rules (eslint-plugin-boundaries v6, flat config).
+  // Root cause of previous inertness: eslint-plugin-boundaries v6 passes elements with
+  // a `match` field but @boundaries/elements v2 reads `mode`. Adding explicit `mode: "file"`
+  // overrides the mismatch — our patterns already include /**/* so file mode is correct.
+  // Severity raised to "error" so CI fails on violations (design requirement).
+  {
+    plugins: { boundaries },
+    settings: {
+      'boundaries/elements': [
+        { type: 'domain', pattern: 'src/modules/*/domain/**/*', mode: 'file', capture: ['module'] },
+        { type: 'application', pattern: 'src/modules/*/application/**/*', mode: 'file', capture: ['module'] },
+        { type: 'infrastructure', pattern: 'src/modules/*/infrastructure/**/*', mode: 'file', capture: ['module'] },
+        { type: 'composition', pattern: 'src/modules/*/composition.ts', mode: 'file', capture: ['module'] },
+        { type: 'delivery', pattern: 'src/app/**/*', mode: 'file' },
+        { type: 'shared-ui', pattern: 'src/shared/ui/**/*', mode: 'file' },
+        { type: 'shared-lib', pattern: 'src/shared/lib/**/*', mode: 'file' },
+        { type: 'shared-infra', pattern: 'src/shared/infrastructure/**/*', mode: 'file' },
+        { type: 'shared-config', pattern: 'src/shared/config/**/*', mode: 'file' },
+      ],
+    },
+    rules: {
+      'boundaries/dependencies': [
+        'error',
+        {
+          default: 'disallow',
+          rules: [
+            // domain: pure TS — no external layers. Intra-domain imports allowed (entities, value
+            // objects, ports all live here). Cross-module domain isolation enforced via code review
+            // until a second module exists and capture-group selectors are warranted.
+            { from: 'domain', allow: ['domain'] },
+            // application: own domain only — no infra, no framework
+            { from: 'application', allow: ['domain'] },
+            // infrastructure: implements ports; may read shared config + lib
+            { from: 'infrastructure', allow: ['domain', 'shared-config', 'shared-lib'] },
+            // composition: DI wiring layer; may wire application + infrastructure
+            { from: 'composition', allow: ['application', 'infrastructure'] },
+            // delivery (app/): thin HTTP/RSC adapter; intra-app imports (CSS, fonts) allowed
+            { from: 'delivery', allow: ['delivery', 'composition', 'shared-ui', 'shared-lib', 'shared-config', 'shared-infra'] },
+            // shared-ui: presentational atoms/molecules; only framework-agnostic utils
+            { from: 'shared-ui', allow: ['shared-lib'] },
+            // shared-infra: cross-cutting platform adapters (db/auth/ai)
+            { from: 'shared-infra', allow: ['shared-config', 'shared-lib'] },
+            // shared-config, shared-lib: pure — import nothing from the element graph
+            { from: 'shared-config', allow: [] },
+            { from: 'shared-lib', allow: [] },
+          ],
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

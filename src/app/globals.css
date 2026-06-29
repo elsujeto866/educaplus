@@ -1,22 +1,50 @@
 @import "tailwindcss";
 
+/* Cyberpunk / HackTheBox dark-first theme */
+@theme {
+  /* Base surfaces */
+  --color-background: #0a0e0f;
+  --color-surface: #111618;
+  --color-surface-elevated: #1a2024;
+
+  /* Borders & text */
+  --color-border: #1f2d32;
+  --color-foreground: #d1d5db;
+  --color-muted-foreground: #6b7280;
+
+  /* Primary: neon green accent */
+  --color-primary: #39ff14;
+  --color-primary-foreground: #0a0e0f;
+
+  /* Accent: cyan */
+  --color-accent: #00e5ff;
+  --color-accent-foreground: #0a0e0f;
+
+  /* Destructive */
+  --color-destructive: #ff2d55;
+  --color-destructive-foreground: #ffffff;
+
+  /* Focus ring */
+  --color-ring: #39ff14;
+}
+
+/* CSS custom properties for explicit usage */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --background: #0a0e0f;
+  --surface: #111618;
+  --surface-elevated: #1a2024;
+  --border: #1f2d32;
+  --foreground: #d1d5db;
+  --muted-foreground: #6b7280;
+  --primary: #39ff14;
+  --primary-foreground: #0a0e0f;
+  --accent: #00e5ff;
+  --accent-foreground: #0a0e0f;
+  --destructive: #ff2d55;
+  --destructive-foreground: #ffffff;
+  --ring: #39ff14;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: dark;
 }
 
 body {
