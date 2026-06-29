@@ -48,6 +48,9 @@ const eslintConfig = defineConfig([
         { type: 'shared-lib', pattern: 'src/shared/lib/**/*', mode: 'file' },
         { type: 'shared-infra', pattern: 'src/shared/infrastructure/**/*', mode: 'file' },
         { type: 'shared-config', pattern: 'src/shared/config/**/*', mode: 'file' },
+        // shared-kernel: pure, framework-agnostic cross-cutting types (TenantContext, Role, errors).
+        // Allowed as a dependency by all other layers; imports nothing from the element graph.
+        { type: 'shared-kernel', pattern: 'src/shared/kernel/**/*', mode: 'file' },
       ],
     },
     rules: {
@@ -59,19 +62,22 @@ const eslintConfig = defineConfig([
             // domain: pure TS — no external layers. Intra-domain imports allowed (entities, value
             // objects, ports all live here). Cross-module domain isolation enforced via code review
             // until a second module exists and capture-group selectors are warranted.
-            { from: 'domain', allow: ['domain'] },
+            { from: 'domain', allow: ['domain', 'shared-kernel'] },
             // application: own domain only — no infra, no framework
-            { from: 'application', allow: ['domain'] },
-            // infrastructure: implements ports; may read shared config + lib
-            { from: 'infrastructure', allow: ['domain', 'shared-config', 'shared-lib'] },
+            { from: 'application', allow: ['domain', 'shared-kernel'] },
+            // infrastructure: implements ports; may read shared config + lib + kernel.
+            // Also allowed to import shared-infra (e.g. module repos using the shared db client).
+            { from: 'infrastructure', allow: ['domain', 'shared-kernel', 'shared-infra', 'shared-config', 'shared-lib'] },
             // composition: DI wiring layer; may wire application + infrastructure
             { from: 'composition', allow: ['application', 'infrastructure'] },
             // delivery (app/): thin HTTP/RSC adapter; intra-app imports (CSS, fonts) allowed
-            { from: 'delivery', allow: ['delivery', 'composition', 'shared-ui', 'shared-lib', 'shared-config', 'shared-infra'] },
+            { from: 'delivery', allow: ['delivery', 'composition', 'shared-ui', 'shared-lib', 'shared-config', 'shared-infra', 'shared-kernel'] },
             // shared-ui: presentational atoms/molecules; only framework-agnostic utils
             { from: 'shared-ui', allow: ['shared-lib'] },
-            // shared-infra: cross-cutting platform adapters (db/auth/ai)
-            { from: 'shared-infra', allow: ['shared-config', 'shared-lib'] },
+            // shared-infra: cross-cutting platform adapters (db/auth/ai); may read kernel types
+            { from: 'shared-infra', allow: ['shared-config', 'shared-lib', 'shared-kernel'] },
+            // shared-kernel: pure — imports nothing from the element graph
+            { from: 'shared-kernel', allow: [] },
             // shared-config, shared-lib: pure — import nothing from the element graph
             { from: 'shared-config', allow: [] },
             { from: 'shared-lib', allow: [] },
