@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import type { NeonTransaction } from 'drizzle-orm/neon-serverless';
 import { db } from './client';
 import type { TenantContext } from '@/shared/kernel/tenant-context';
 
@@ -13,15 +14,16 @@ declare const _tenantTxBrand: unique symbol;
  * A Drizzle transaction handle that has been set up with the tenant config.
  * Obtained exclusively from the `fn` callback inside `withTenant`.
  *
- * The type is structurally identical to the inner transaction type of `db`
- * (so all Drizzle query methods are available) but is nominally distinct
- * (the brand prevents passing a raw transaction or the `db` handle directly).
+ * Uses NeonTransaction directly (the concrete type from drizzle-orm/neon-serverless)
+ * to avoid conditional-type inference over a generic method, which resolves to
+ * `never` in TypeScript strict mode.
+ *
+ * The brand prevents passing a raw transaction or the `db` handle directly —
+ * callers must go through withTenant().
  */
-export type TenantTx = (typeof db extends {
-  transaction: (f: (tx: infer T) => unknown) => unknown;
-}
-  ? T
-  : never) & { readonly [_tenantTxBrand]: true };
+export type TenantTx = NeonTransaction<Record<string, never>, Record<string, never>> & {
+  readonly [_tenantTxBrand]: true;
+};
 
 /**
  * Opens a Drizzle transaction, sets `app.current_tenant_id` for the duration
