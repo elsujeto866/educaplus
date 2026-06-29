@@ -1,3 +1,3 @@
-// Schema barrel — future per-module schemas are re-exported here.
-// No tables defined in this scaffold change.
-export {};
+// Schema barrel — re-export all table definitions here so drizzle-kit
+// picks them up via the single `schema: './src/shared/infrastructure/db/schema/*'` glob.
+export * from './academy.schema';
