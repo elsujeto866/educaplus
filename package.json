@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint src --ext .ts,.tsx,.mjs --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --project domain --project ui",
+    "test:rls": "vitest run --project integration",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -42,6 +43,7 @@
     "eslint-config-next": "16.2.9",
     "eslint-plugin-boundaries": "^6.0.2",
     "jsdom": "^29.1.1",
+    "postgres": "^3.4.9",
     "prettier": "^3.9.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "tailwindcss": "^4",

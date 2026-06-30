@@ -45,6 +45,21 @@ export default defineConfig({
           setupFiles: ['tests/setup.ts'],
         },
       },
+      {
+        // Integration project — requires Docker Postgres on port 5433.
+        // Run with: pnpm test:rls
+        // Pre-step:  docker compose -f docker-compose.test.yml up -d
+        // Post-step: docker compose -f docker-compose.test.yml down -v
+        test: {
+          name: 'integration',
+          include: ['tests/integration/**/*.spec.ts'],
+          environment: 'node',
+          globalSetup: ['./tests/integration/setup/global-setup.ts'],
+          // Allow time for Docker container startup and RLS operations.
+          testTimeout: 30_000,
+          hookTimeout: 60_000,
+        },
+      },
     ],
   },
 });

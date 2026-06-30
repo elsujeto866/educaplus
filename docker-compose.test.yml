@@ -1,0 +1,15 @@
+services:
+  postgres-rls-test:
+    image: postgres:17
+    container_name: educaplus-rls-test-pg
+    environment:
+      POSTGRES_DB: educaplus_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d educaplus_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
