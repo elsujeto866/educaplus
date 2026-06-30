@@ -86,6 +86,76 @@ describe('7.1 tenant read isolation (lesson_progress)', () => {
   });
 });
 
+describe('7.1 tenant read isolation (lesson_video_assets)', () => {
+  it('allows same-tenant read: org_A context sees org_A lesson_video_assets', async () => {
+    const rows = await asTenant(
+      'org_A',
+      (tx) => tx`SELECT academy_id FROM lesson_video_assets`,
+    );
+    expect(rows.length).toBeGreaterThanOrEqual(1);
+    expect(rows.every((r) => (r as { academy_id: string }).academy_id === 'org_A')).toBe(true);
+  });
+
+  it('blocks cross-tenant read: org_A context cannot see org_B lesson_video_assets', async () => {
+    const rows = await asTenant(
+      'org_A',
+      (tx) => tx`SELECT lesson_id FROM lesson_video_assets WHERE academy_id = 'org_B'`,
+    );
+    expect(rows).toHaveLength(0);
+  });
+});
+
+describe('7.1 tenant read isolation (lesson_text_contents)', () => {
+  it('allows same-tenant read: org_A context sees org_A lesson_text_contents', async () => {
+    const rows = await asTenant(
+      'org_A',
+      (tx) => tx`SELECT academy_id FROM lesson_text_contents`,
+    );
+    expect(rows.length).toBeGreaterThanOrEqual(1);
+    expect(rows.every((r) => (r as { academy_id: string }).academy_id === 'org_A')).toBe(true);
+  });
+
+  it('blocks cross-tenant read: org_A context cannot see org_B lesson_text_contents', async () => {
+    const rows = await asTenant(
+      'org_A',
+      (tx) => tx`SELECT lesson_id FROM lesson_text_contents WHERE academy_id = 'org_B'`,
+    );
+    expect(rows).toHaveLength(0);
+  });
+});
+
+describe('7.1 tenant read isolation (resources)', () => {
+  it('allows same-tenant read: org_A context sees org_A resources', async () => {
+    const rows = await asTenant('org_A', (tx) => tx`SELECT academy_id FROM resources`);
+    expect(rows.length).toBeGreaterThanOrEqual(1);
+    expect(rows.every((r) => (r as { academy_id: string }).academy_id === 'org_A')).toBe(true);
+  });
+
+  it('blocks cross-tenant read: org_A context cannot see org_B resources', async () => {
+    const rows = await asTenant(
+      'org_A',
+      (tx) => tx`SELECT id FROM resources WHERE academy_id = 'org_B'`,
+    );
+    expect(rows).toHaveLength(0);
+  });
+});
+
+describe('7.1 tenant read isolation (assessments)', () => {
+  it('allows same-tenant read: org_A context sees org_A assessments', async () => {
+    const rows = await asTenant('org_A', (tx) => tx`SELECT academy_id FROM assessments`);
+    expect(rows.length).toBeGreaterThanOrEqual(1);
+    expect(rows.every((r) => (r as { academy_id: string }).academy_id === 'org_A')).toBe(true);
+  });
+
+  it('blocks cross-tenant read: org_A context cannot see org_B assessments', async () => {
+    const rows = await asTenant(
+      'org_A',
+      (tx) => tx`SELECT id FROM assessments WHERE academy_id = 'org_B'`,
+    );
+    expect(rows).toHaveLength(0);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // 7.2  No context — deny-by-default on course tables
 // ---------------------------------------------------------------------------
@@ -113,6 +183,26 @@ describe('7.2 deny-by-default (no tenant context set)', () => {
 
   it('returns 0 rows from lessons when app.current_tenant_id is not set', async () => {
     const rows = await appUserClient`SELECT id FROM lessons`;
+    expect(rows).toHaveLength(0);
+  });
+
+  it('returns 0 rows from lesson_video_assets when app.current_tenant_id is not set', async () => {
+    const rows = await appUserClient`SELECT lesson_id FROM lesson_video_assets`;
+    expect(rows).toHaveLength(0);
+  });
+
+  it('returns 0 rows from lesson_text_contents when app.current_tenant_id is not set', async () => {
+    const rows = await appUserClient`SELECT lesson_id FROM lesson_text_contents`;
+    expect(rows).toHaveLength(0);
+  });
+
+  it('returns 0 rows from resources when app.current_tenant_id is not set', async () => {
+    const rows = await appUserClient`SELECT id FROM resources`;
+    expect(rows).toHaveLength(0);
+  });
+
+  it('returns 0 rows from assessments when app.current_tenant_id is not set', async () => {
+    const rows = await appUserClient`SELECT id FROM assessments`;
     expect(rows).toHaveLength(0);
   });
 });
@@ -154,6 +244,50 @@ describe('7.3 cross-tenant write blocked (WITH CHECK)', () => {
             'b0000000-0000-0000-0000-000000000003',
             'org_B'
           )
+        `,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('rejects INSERT into org_B lesson_video_assets while org_A context is active', async () => {
+    await expect(
+      asTenant('org_A', (tx) =>
+        tx`
+          INSERT INTO lesson_video_assets (lesson_id, academy_id)
+          VALUES ('b0000000-0000-0000-0000-000000000003', 'org_B')
+        `,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('rejects INSERT into org_B lesson_text_contents while org_A context is active', async () => {
+    await expect(
+      asTenant('org_A', (tx) =>
+        tx`
+          INSERT INTO lesson_text_contents (lesson_id, academy_id, body)
+          VALUES ('b0000000-0000-0000-0000-000000000006', 'org_B', '{}')
+        `,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('rejects INSERT into org_B resources while org_A context is active', async () => {
+    await expect(
+      asTenant('org_A', (tx) =>
+        tx`
+          INSERT INTO resources (lesson_id, academy_id, type, title, url, position)
+          VALUES ('b0000000-0000-0000-0000-000000000003', 'org_B', 'link', 'Evil Resource', 'https://evil.com', 99)
+        `,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('rejects INSERT into org_B assessments while org_A context is active', async () => {
+    await expect(
+      asTenant('org_A', (tx) =>
+        tx`
+          INSERT INTO assessments (module_id, academy_id, title)
+          VALUES ('b0000000-0000-0000-0000-000000000002', 'org_B', 'Evil Assessment')
         `,
       ),
     ).rejects.toThrow();

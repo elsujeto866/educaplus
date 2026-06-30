@@ -211,6 +211,71 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       VALUES ('b0000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000003', 'org_B')
       ON CONFLICT (id) DO NOTHING
     `;
+
+    // 9. Seed the 4 companion/child tables that need direct RLS assertions:
+    //    lesson_video_assets, lesson_text_contents, resources, assessments.
+    //    Each org gets one row per table so cross-tenant isolation tests have
+    //    data on both sides.
+
+    // lesson_video_assets — companion for the existing type='video' lessons
+    await sql`
+      INSERT INTO lesson_video_assets (lesson_id, academy_id)
+      VALUES ('a0000000-0000-0000-0000-000000000003', 'org_A')
+      ON CONFLICT (lesson_id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO lesson_video_assets (lesson_id, academy_id)
+      VALUES ('b0000000-0000-0000-0000-000000000003', 'org_B')
+      ON CONFLICT (lesson_id) DO NOTHING
+    `;
+
+    // New type='text' lessons — required as parents for lesson_text_contents
+    await sql`
+      INSERT INTO lessons (id, module_id, academy_id, type, title, position)
+      VALUES ('a0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000002', 'org_A', 'text', 'Lesson A2', 2)
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO lessons (id, module_id, academy_id, type, title, position)
+      VALUES ('b0000000-0000-0000-0000-000000000006', 'b0000000-0000-0000-0000-000000000002', 'org_B', 'text', 'Lesson B2', 2)
+      ON CONFLICT (id) DO NOTHING
+    `;
+
+    // lesson_text_contents — companion for the new type='text' lessons
+    await sql`
+      INSERT INTO lesson_text_contents (lesson_id, academy_id, body)
+      VALUES ('a0000000-0000-0000-0000-000000000006', 'org_A', '{}')
+      ON CONFLICT (lesson_id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO lesson_text_contents (lesson_id, academy_id, body)
+      VALUES ('b0000000-0000-0000-0000-000000000006', 'org_B', '{}')
+      ON CONFLICT (lesson_id) DO NOTHING
+    `;
+
+    // resources — external link attached to the video lessons
+    await sql`
+      INSERT INTO resources (id, lesson_id, academy_id, type, title, url, position)
+      VALUES ('a0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000003', 'org_A', 'link', 'Resource A1', 'https://example.com/resource-a1', 1)
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO resources (id, lesson_id, academy_id, type, title, url, position)
+      VALUES ('b0000000-0000-0000-0000-000000000007', 'b0000000-0000-0000-0000-000000000003', 'org_B', 'link', 'Resource B1', 'https://example.com/resource-b1', 1)
+      ON CONFLICT (id) DO NOTHING
+    `;
+
+    // assessments — one per module (UNIQUE module_id constraint)
+    await sql`
+      INSERT INTO assessments (id, module_id, academy_id, title)
+      VALUES ('a0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000002', 'org_A', 'Assessment A1')
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO assessments (id, module_id, academy_id, title)
+      VALUES ('b0000000-0000-0000-0000-000000000008', 'b0000000-0000-0000-0000-000000000002', 'org_B', 'Assessment B1')
+      ON CONFLICT (id) DO NOTHING
+    `;
   } finally {
     await sql.end();
   }
