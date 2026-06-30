@@ -19,4 +19,10 @@ export interface MembershipRepository {
     academyId: string,
     clerkUserId: string,
   ): Promise<Membership | null>;
+
+  /**
+   * Hard-delete a membership by (academyId, clerkUserId).
+   * Idempotent: deleting a non-existent row is a no-op success.
+   */
+  delete(ctx: TenantContext, academyId: string, clerkUserId: string): Promise<void>;
 }

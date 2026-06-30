@@ -37,6 +37,19 @@ export class DrizzleMembershipRepository implements MembershipRepository {
     );
   }
 
+  async delete(ctx: TenantContext, academyId: string, clerkUserId: string): Promise<void> {
+    await withTenant(ctx, (tx) =>
+      tx
+        .delete(memberships)
+        .where(
+          and(
+            eq(memberships.academyId, academyId),
+            eq(memberships.clerkUserId, clerkUserId),
+          ),
+        ),
+    );
+  }
+
   async findByAcademyAndUser(
     ctx: TenantContext,
     academyId: string,

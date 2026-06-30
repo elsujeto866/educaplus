@@ -3,11 +3,13 @@ import { DrizzleMembershipRepository } from './infrastructure/drizzle-membership
 import { ProvisionAcademyUseCase } from './application/provision-academy.use-case';
 import { SyncMembershipUseCase } from './application/sync-membership.use-case';
 import { DeleteAcademyUseCase } from './application/delete-academy.use-case';
+import { DeleteMembershipUseCase } from './application/delete-membership.use-case';
 
 export interface AcademyComposition {
   provisionAcademy: ProvisionAcademyUseCase;
   syncMembership: SyncMembershipUseCase;
   deleteAcademy: DeleteAcademyUseCase;
+  deleteMembership: DeleteMembershipUseCase;
 }
 
 /**
@@ -25,5 +27,6 @@ export function makeAcademyComposition(): AcademyComposition {
     provisionAcademy: new ProvisionAcademyUseCase(academyRepo),
     syncMembership: new SyncMembershipUseCase(membershipRepo),
     deleteAcademy: new DeleteAcademyUseCase(academyRepo),
+    deleteMembership: new DeleteMembershipUseCase(membershipRepo),
   };
 }
