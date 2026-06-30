@@ -97,17 +97,26 @@ Do this from your local machine with both `DATABASE_URL` and
 `DIRECT_DATABASE_URL` set in `.env.local`.
 
 ```bash
-# 1. Generate (migrations already exist — skip if no schema changes)
-pnpm db:generate
+# 1. Create the app_user role FIRST.
+#    The schema migrations create RLS policies `TO app_user`, so the role
+#    MUST exist before db:migrate or migration fails ("role app_user does
+#    not exist"). Idempotent — safe if you already created it in step 2.3.
+pnpm db:role
 
-# 2. Apply Drizzle schema migrations (tables, policies, indexes)
-#    drizzle.config.ts reads DIRECT_DATABASE_URL automatically
+# 2. Apply Drizzle schema migrations (tables, policies, indexes).
+#    drizzle.config.ts reads DIRECT_DATABASE_URL automatically.
 pnpm db:migrate
 
-# 3. Apply manual RLS hardening (FORCE RLS + grants)
-#    Must run AFTER db:migrate so tables exist, and AFTER app_user is created
+# 3. Apply manual RLS hardening (FORCE RLS + grants) — tables now exist.
 pnpm db:rls
+
+# 4. Set a REAL password for app_user (db:role created a placeholder),
+#    then use it in DATABASE_URL / DIRECT_DATABASE_URL. In Supabase SQL Editor:
+#      ALTER ROLE app_user PASSWORD '<strong-random>';
 ```
+
+> `pnpm db:generate` is only needed if you changed the schema; the committed
+> migrations already exist, so skip it for a normal deploy.
 
 > **Why is `db:rls` separate from `db:migrate`?**
 > `drizzle-kit migrate` handles schema DDL (CREATE TABLE, CREATE POLICY, etc.)
@@ -121,9 +130,13 @@ pnpm db:rls
 > guarded by `IF NOT EXISTS` and the `GRANT`/`FORCE` statements are safe to
 > re-run.
 >
-> **Ordering matters:** `app_user` role must exist before `db:rls` (which
-> grants privileges to it). The role is created inside `0001_rls.sql`, so
-> running `db:migrate` first and then `db:rls` is the correct order.
+> **Ordering matters — the correct order is `db:role` → `db:migrate` → `db:rls`:**
+> - `db:role` first: the generated migrations create RLS policies `TO app_user`,
+>   so the role must already exist or `db:migrate` fails with
+>   "role app_user does not exist".
+> - `db:migrate` next: creates the tables, policies, and indexes.
+> - `db:rls` last: applies `FORCE ROW LEVEL SECURITY` + grants, which require
+>   the tables to already exist.
 
 ---
 
