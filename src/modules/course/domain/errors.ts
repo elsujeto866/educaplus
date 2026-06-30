@@ -35,3 +35,10 @@ export class DuplicateAssessmentError extends Error {
     this.name = 'DuplicateAssessmentError';
   }
 }
+
+export class InvalidReorderError extends Error {
+  constructor(id: string, scope: string) {
+    super(`Item "${id}" does not belong to scope "${scope}"`);
+    this.name = 'InvalidReorderError';
+  }
+}
