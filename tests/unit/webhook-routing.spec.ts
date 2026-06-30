@@ -29,11 +29,13 @@ import type { AcademyComposition } from '../../src/modules/academy/composition';
 const mockProvisionAcademy = { execute: vi.fn() };
 const mockSyncMembership = { execute: vi.fn() };
 const mockDeleteAcademy = { execute: vi.fn() };
+const mockDeleteMembership = { execute: vi.fn() };
 
 const mockComposition = {
   provisionAcademy: mockProvisionAcademy,
   syncMembership: mockSyncMembership,
   deleteAcademy: mockDeleteAcademy,
+  deleteMembership: mockDeleteMembership,
 } as unknown as AcademyComposition;
 
 // ---------------------------------------------------------------------------
@@ -178,7 +180,7 @@ describe('handleWebhookEvent — membership events', () => {
     expect(input.role).toBe('student');
   });
 
-  it('acknowledges organizationMembership.deleted without calling syncMembership', async () => {
+  it('calls deleteMembership on organizationMembership.deleted with correct tenant context', async () => {
     const event: WebhookEvent = {
       type: 'organizationMembership.deleted',
       data: {
@@ -196,6 +198,41 @@ describe('handleWebhookEvent — membership events', () => {
 
     await handleWebhookEvent(event, mockComposition);
 
+    expect(mockDeleteMembership.execute).toHaveBeenCalledOnce();
+    expect(mockDeleteMembership.execute).toHaveBeenCalledWith(
+      { orgId: 'org_test', userId: 'system', role: 'admin' },
+      { academyId: 'org_test', clerkUserId: 'user_abc' },
+    );
     expect(mockSyncMembership.execute).not.toHaveBeenCalled();
+  });
+
+  it('deleteMembership is idempotent — second deleted event for same user is a no-op success', async () => {
+    const makeEvent = (): WebhookEvent =>
+      ({
+        type: 'organizationMembership.deleted',
+        data: {
+          id: 'orgmem_test',
+          object: 'organization_membership',
+          role: 'org:admin',
+          permissions: [],
+          created_at: Date.now(),
+          updated_at: Date.now(),
+          organization: { id: 'org_test' },
+          public_user_data: { user_id: 'user_abc' },
+          public_metadata: {},
+        },
+      }) as unknown as WebhookEvent;
+
+    // Simulate two webhook deliveries (Svix retries).
+    await handleWebhookEvent(makeEvent(), mockComposition);
+    await handleWebhookEvent(makeEvent(), mockComposition);
+
+    // Both calls succeed; the underlying repo handles idempotency.
+    expect(mockDeleteMembership.execute).toHaveBeenCalledTimes(2);
+    expect(mockDeleteMembership.execute).toHaveBeenNthCalledWith(
+      1,
+      { orgId: 'org_test', userId: 'system', role: 'admin' },
+      { academyId: 'org_test', clerkUserId: 'user_abc' },
+    );
   });
 });

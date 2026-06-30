@@ -66,10 +66,20 @@ export async function handleWebhookEvent(
       break;
     }
 
-    case 'organizationMembership.deleted':
-      // Membership hard-delete deferred — MembershipRepository has no delete
-      // port in this slice. Acknowledge receipt so Svix stops re-delivery.
+    case 'organizationMembership.deleted': {
+      // PROVENANCE: orgId sourced from membership payload's verified org object.
+      const orgId = event.data.organization.id;
+      const ctx: TenantContext = {
+        orgId,
+        userId: 'system',
+        role: 'admin',
+      };
+      await composition.deleteMembership.execute(ctx, {
+        academyId: orgId,
+        clerkUserId: event.data.public_user_data.user_id,
+      });
       break;
+    }
 
     default:
       // Unknown / unhandled event type — acknowledge to suppress Svix retries.
