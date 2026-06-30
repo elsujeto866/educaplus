@@ -5,6 +5,9 @@ export default {
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env['DATABASE_URL'] ?? '',
+    // Prefer the direct connection (port 5432, no PgBouncer) for migrations.
+    // Fall back to DATABASE_URL so local dev (Docker or direct Postgres) works
+    // without setting both variables.
+    url: process.env['DIRECT_DATABASE_URL'] ?? process.env['DATABASE_URL'] ?? '',
   },
 } satisfies Config;

@@ -10,7 +10,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --project domain --project ui",
     "test:rls": "vitest run --project integration",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:rls": "tsx scripts/apply-rls.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.9",
