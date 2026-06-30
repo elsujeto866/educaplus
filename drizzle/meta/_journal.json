@@ -8,6 +8,13 @@
       "when": 1782756197531,
       "tag": "0000_living_jetstream",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782840506199,
+      "tag": "0001_careful_starbolt",
+      "breakpoints": true
     }
   ]
 }
