@@ -12,13 +12,13 @@ const envSchema = z.object({
   // Value is the Clerk webhook Signing Secret (whsec_...)
   CLERK_WEBHOOK_SECRET: z.string().min(1),
 
-  // Cloudflare Stream
-  CLOUDFLARE_ACCOUNT_ID: z.string().min(1),
-  CLOUDFLARE_API_TOKEN: z.string().min(1),
+  // Cloudflare Stream (optional until the video-pipeline change wires it)
+  CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
+  CLOUDFLARE_API_TOKEN: z.string().optional(),
 
-  // AI
-  ANTHROPIC_API_KEY: z.string().min(1),
-  VOYAGE_API_KEY: z.string().min(1),
+  // AI (optional until the ai-tutor-rag change wires it)
+  ANTHROPIC_API_KEY: z.string().optional(),
+  VOYAGE_API_KEY: z.string().optional(),
 
   // Supabase client SDK (OPTIONAL — not used at runtime; reserved for future Storage)
   SUPABASE_URL: z.string().optional(),
