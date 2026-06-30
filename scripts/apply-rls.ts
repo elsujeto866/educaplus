@@ -22,6 +22,7 @@
  *   DIRECT_DATABASE_URL=postgresql://postgres:pass@host:5432/db pnpm db:rls
  */
 
+import 'dotenv/config';
 import postgres from 'postgres';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
