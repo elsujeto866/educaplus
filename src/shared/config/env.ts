@@ -1,12 +1,15 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-  // Database
+  // Database — runtime pooler (required)
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  // Database — direct connection for migrations (optional; falls back to DATABASE_URL in drizzle.config)
+  DIRECT_DATABASE_URL: z.string().optional(),
 
   // Clerk authentication
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
   CLERK_SECRET_KEY: z.string().min(1),
+  // Value is the Clerk webhook Signing Secret (whsec_...)
   CLERK_WEBHOOK_SECRET: z.string().min(1),
 
   // Cloudflare Stream
@@ -16,6 +19,11 @@ const envSchema = z.object({
   // AI
   ANTHROPIC_API_KEY: z.string().min(1),
   VOYAGE_API_KEY: z.string().min(1),
+
+  // Supabase client SDK (OPTIONAL — not used at runtime; reserved for future Storage)
+  SUPABASE_URL: z.string().optional(),
+  SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
+  SUPABASE_SECRET_KEY: z.string().optional(),
 });
 
 type Env = z.infer<typeof envSchema>;
