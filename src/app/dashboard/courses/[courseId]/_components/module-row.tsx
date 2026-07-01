@@ -1,7 +1,13 @@
 import Link from 'next/link';
-import { reorderModuleDownAction, reorderModuleUpAction } from '../../actions';
+import {
+  reorderModuleDownAction,
+  reorderModuleUpAction,
+  reorderLessonDownAction,
+  reorderLessonUpAction,
+} from '../../actions';
 import { Button } from '@/shared/ui/atoms/button';
 import { Card } from '@/shared/ui/atoms/card';
+import { AddLessonForm } from './add-lesson-form';
 
 interface LessonLinkProp {
   id: string;
@@ -54,20 +60,43 @@ export function ModuleRow({ courseId, moduleId, title, lessons, isFirst, isLast 
       </div>
       {lessons.length > 0 ? (
         <ul className="flex flex-col gap-1">
-          {lessons.map((lesson) => (
-            <li key={lesson.id}>
+          {lessons.map((lesson, index) => (
+            <li key={lesson.id} className="flex items-center justify-between gap-2">
               <Link
                 href={`/dashboard/courses/${courseId}/lessons/${lesson.id}`}
                 className="text-sm text-primary hover:underline"
               >
                 {lesson.title}
               </Link>
+              <div className="flex gap-1">
+                <form action={reorderLessonUpAction.bind(null, courseId, moduleId, lesson.id)}>
+                  <Button
+                    type="submit"
+                    variant="ghost"
+                    disabled={index === 0}
+                    aria-label={`Mover lección "${lesson.title}" hacia arriba`}
+                  >
+                    ↑
+                  </Button>
+                </form>
+                <form action={reorderLessonDownAction.bind(null, courseId, moduleId, lesson.id)}>
+                  <Button
+                    type="submit"
+                    variant="ghost"
+                    disabled={index === lessons.length - 1}
+                    aria-label={`Mover lección "${lesson.title}" hacia abajo`}
+                  >
+                    ↓
+                  </Button>
+                </form>
+              </div>
             </li>
           ))}
         </ul>
       ) : (
         <p className="text-sm text-muted-foreground">Sin lecciones todavía.</p>
       )}
+      <AddLessonForm courseId={courseId} moduleId={moduleId} />
     </Card>
   );
 }
