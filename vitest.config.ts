@@ -42,6 +42,12 @@ export default defineConfig({
           name: 'ui',
           include: ['tests/unit/**/*.spec.tsx'],
           environment: 'jsdom',
+          // Required so `@testing-library/jest-dom`'s setup file can call
+          // the global `expect.extend(...)` — it does not import `expect`
+          // from vitest itself. Domain-project tests are unaffected: they
+          // already import `expect` explicitly from 'vitest', which still
+          // works identically with globals enabled.
+          globals: true,
           setupFiles: ['tests/setup.ts'],
         },
       },
