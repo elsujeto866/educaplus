@@ -19,8 +19,9 @@ const isPublicRoute = createRouteMatcher([
  * Responsibilities (coarse layer only):
  *   1. Pass public routes through unconditionally.
  *   2. Reject unauthenticated users → redirect to /sign-in.
- *   3. Reject authenticated users without an active org → redirect to /sign-in
- *      (Clerk's hosted sign-in flow handles org selection).
+ *   3. Reject authenticated users without an active org → redirect to
+ *      /create-academy, where the user either creates their academy
+ *      (if approved) or sees an invite-only screen.
  *
  * Does NOT enforce business roles (admin/instructor/student).
  * Fine-grained role checks live in the use-case layer via assertRole().
@@ -37,11 +38,11 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   if (!orgId) {
-    // Authenticated but no active org — send back to sign-in where Clerk
-    // prompts org selection before returning the user to the app.
-    const signInUrl = new URL('/sign-in', req.url);
-    signInUrl.searchParams.set('redirect_url', req.url);
-    return NextResponse.redirect(signInUrl);
+    // Authenticated but no active org — send to the create-academy gate.
+    // Guard against redirecting the gate page to itself (infinite loop):
+    // a no-org user visiting /create-academy must be allowed through.
+    if (req.nextUrl.pathname === '/create-academy') return;
+    return NextResponse.redirect(new URL('/create-academy', req.url));
   }
 });
 
