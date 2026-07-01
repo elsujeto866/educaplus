@@ -44,7 +44,6 @@ function makeModule(overrides: Partial<ConstructorParameters<typeof CourseModule
     title: 'Module 1',
     description: null,
     position: 1,
-    assessmentId: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,

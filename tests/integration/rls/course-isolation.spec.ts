@@ -286,8 +286,8 @@ describe('7.3 cross-tenant write blocked (WITH CHECK)', () => {
     await expect(
       asTenant('org_A', (tx) =>
         tx`
-          INSERT INTO assessments (module_id, academy_id, title)
-          VALUES ('b0000000-0000-0000-0000-000000000002', 'org_B', 'Evil Assessment')
+          INSERT INTO assessments (course_id, academy_id, title, questions)
+          VALUES ('b0000000-0000-0000-0000-000000000001', 'org_B', 'Evil Assessment', '[]')
         `,
       ),
     ).rejects.toThrow();

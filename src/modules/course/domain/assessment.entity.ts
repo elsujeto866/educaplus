@@ -1,49 +1,56 @@
-import type { JSONValue } from './value-objects/lesson-content.vo';
+import { InvalidAssessmentError } from './errors';
+import type { QuizQuestion } from './value-objects/quiz-question.vo';
 
 export interface AssessmentProps {
   id: string;
-  moduleId: string;
+  courseId: string;
   academyId: string;
   title: string;
   /**
-   * Opaque JSONB configuration — the schema is owned by the SRS change that
-   * will define quiz/flashcard structure. At this layer it is treated as an
-   * arbitrary JSON value.
+   * Typed quiz questions — each element is already validated by
+   * QuizQuestionFactory.create() before the entity is constructed.
+   * An empty array is a VALID draft state (no "≥1 question" rule at this
+   * authoring layer — that belongs to a later publish/take slice).
    */
-  config: JSONValue;
+  questions: QuizQuestion[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 /**
- * Assessment entity — placeholder for the SRS assessment system.
+ * Assessment entity — the final quiz for a course.
  *
- * Each CourseModule has at most one assessment (unique FK in the schema).
- * Duplicate-assessment detection is enforced by AssessmentRepository.findByModule
+ * One assessment per course (unique FK in the schema: assessments.course_id).
+ * Duplicate-assessment detection is enforced by AssessmentRepository.findByCourse
  * in the use-case layer before calling upsert.
  *
  * Pure TS — zero infrastructure imports.
  */
 export class Assessment {
   readonly id: string;
-  readonly moduleId: string;
+  readonly courseId: string;
   readonly academyId: string;
   readonly title: string;
-  readonly config: JSONValue;
+  readonly questions: QuizQuestion[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
 
   constructor(props: AssessmentProps) {
     if (!props.id) throw new Error('Assessment: id is required');
-    if (!props.moduleId) throw new Error('Assessment: moduleId is required');
+    if (!props.courseId) throw new Error('Assessment: courseId is required');
     if (!props.academyId) throw new Error('Assessment: academyId is required');
     if (!props.title) throw new Error('Assessment: title is required');
 
+    const questionIds = props.questions.map((q) => q.id);
+    if (new Set(questionIds).size !== questionIds.length) {
+      throw new InvalidAssessmentError('question ids must be unique');
+    }
+
     this.id = props.id;
-    this.moduleId = props.moduleId;
+    this.courseId = props.courseId;
     this.academyId = props.academyId;
     this.title = props.title;
-    this.config = props.config;
+    this.questions = props.questions;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }

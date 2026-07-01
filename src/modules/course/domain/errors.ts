@@ -30,8 +30,8 @@ export class DuplicateEnrollmentError extends Error {
 }
 
 export class DuplicateAssessmentError extends Error {
-  constructor(moduleId: string) {
-    super(`CourseModule "${moduleId}" already has an assessment — upsert to replace it`);
+  constructor(courseId: string) {
+    super(`Course "${courseId}" already has an assessment — upsert to replace it`);
     this.name = 'DuplicateAssessmentError';
   }
 }
@@ -40,5 +40,19 @@ export class InvalidReorderError extends Error {
   constructor(id: string, scope: string) {
     super(`Item "${id}" does not belong to scope "${scope}"`);
     this.name = 'InvalidReorderError';
+  }
+}
+
+export class InvalidQuizQuestionError extends Error {
+  constructor(reason: string) {
+    super(`Invalid quiz question: ${reason}`);
+    this.name = 'InvalidQuizQuestionError';
+  }
+}
+
+export class InvalidAssessmentError extends Error {
+  constructor(reason: string) {
+    super(`Invalid assessment: ${reason}`);
+    this.name = 'InvalidAssessmentError';
   }
 }

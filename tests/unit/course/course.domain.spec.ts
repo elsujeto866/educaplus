@@ -11,7 +11,9 @@ import {
   CourseNotPublishedError,
   DuplicateEnrollmentError,
   DuplicateAssessmentError,
+  InvalidAssessmentError,
 } from '../../../src/modules/course/domain/errors';
+import { QuizQuestionFactory } from '../../../src/modules/course/domain/value-objects/quiz-question.vo';
 import { Slug } from '../../../src/modules/course/domain/value-objects/slug.vo';
 import { parseLessonType } from '../../../src/modules/course/domain/value-objects/lesson-type.vo';
 import { parsePublicationStatus } from '../../../src/modules/course/domain/value-objects/publication-status.vo';
@@ -140,7 +142,7 @@ describe('CourseModule', () => {
       updatedAt: now,
     });
     expect(mod.id).toBe('mod-1');
-    expect(mod.assessmentId).toBeNull();
+    expect(mod.position).toBe(1);
   });
 
   it('throws when title is empty', () => {
@@ -327,33 +329,91 @@ describe('LessonProgress', () => {
 // Assessment entity
 // ---------------------------------------------------------------------------
 
+function makeQuizQuestion(
+  overrides: Partial<Parameters<typeof QuizQuestionFactory.create>[0]> = {},
+) {
+  return QuizQuestionFactory.create({
+    type: 'single',
+    id: 'q-1',
+    prompt: 'What is 2 + 2?',
+    options: [
+      { id: 'opt-1', label: '3' },
+      { id: 'opt-2', label: '4' },
+    ],
+    correctOptionId: 'opt-2',
+    ...overrides,
+  });
+}
+
 describe('Assessment', () => {
-  it('can be instantiated with opaque config', () => {
+  it('can be instantiated with a course-scoped quiz', () => {
     const assessment = new Assessment({
       id: 'assess-1',
-      moduleId: 'mod-1',
+      courseId: 'course-1',
       academyId: 'org_A',
       title: 'Quiz 1',
-      config: { type: 'quiz', questions: [] },
+      questions: [makeQuizQuestion()],
       createdAt: now,
       updatedAt: now,
     });
     expect(assessment.id).toBe('assess-1');
-    expect(assessment.config).toEqual({ type: 'quiz', questions: [] });
+    expect(assessment.courseId).toBe('course-1');
+    expect(assessment.questions).toHaveLength(1);
+  });
+
+  it('accepts an empty questions array as a valid draft state', () => {
+    const assessment = new Assessment({
+      id: 'assess-1',
+      courseId: 'course-1',
+      academyId: 'org_A',
+      title: 'Quiz 1',
+      questions: [],
+      createdAt: now,
+      updatedAt: now,
+    });
+    expect(assessment.questions).toEqual([]);
   });
 
   it('throws when title is empty', () => {
     expect(() =>
       new Assessment({
         id: 'assess-1',
-        moduleId: 'mod-1',
+        courseId: 'course-1',
         academyId: 'org_A',
         title: '',
-        config: null,
+        questions: [],
         createdAt: now,
         updatedAt: now,
       }),
     ).toThrow('title is required');
+  });
+
+  it('throws when courseId is empty', () => {
+    expect(() =>
+      new Assessment({
+        id: 'assess-1',
+        courseId: '',
+        academyId: 'org_A',
+        title: 'Quiz 1',
+        questions: [],
+        createdAt: now,
+        updatedAt: now,
+      }),
+    ).toThrow('courseId is required');
+  });
+
+  it('throws InvalidAssessmentError when question ids are duplicated', () => {
+    expect(() =>
+      new Assessment({
+        id: 'assess-1',
+        courseId: 'course-1',
+        academyId: 'org_A',
+        title: 'Quiz 1',
+        questions: [makeQuizQuestion({ id: 'q-1' }), makeQuizQuestion({ id: 'q-1' })],
+        createdAt: now,
+        updatedAt: now,
+      }),
+    ).toThrow(InvalidAssessmentError);
   });
 });
 
@@ -404,9 +464,10 @@ describe('Domain errors', () => {
   });
 
   it('DuplicateAssessmentError is an Error with the correct name', () => {
-    const err = new DuplicateAssessmentError('mod-1');
+    const err = new DuplicateAssessmentError('course-1');
     expect(err).toBeInstanceOf(Error);
     expect(err.name).toBe('DuplicateAssessmentError');
+    expect(err.message).toContain('course-1');
   });
 });
 

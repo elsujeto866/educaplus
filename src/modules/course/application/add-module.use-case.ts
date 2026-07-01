@@ -35,7 +35,6 @@ export class AddModuleUseCase {
       title: input.title,
       description: input.description ?? null,
       position: count + 1,
-      assessmentId: null,
       createdAt: now,
       updatedAt: now,
     });

@@ -21,10 +21,16 @@
  *   8. Apply drizzle migration 0002_orange_shiver_man.sql (adds nullable
  *      external_url column to lesson_video_assets — no new RLS needed, the
  *      existing tenant_isolation policy already covers the new column).
- *   9. Seed academies org_A / org_B and one membership each (superuser bypasses
+ *   9. Apply drizzle migration 0003_final_quiz_authoring.sql (reshapes
+ *      assessments to course-scoped typed JSONB questions — drops
+ *      course_modules.assessment_id, drops assessments.module_id/config,
+ *      adds assessments.course_id (unique, cascade) + questions jsonb.
+ *      FORCE ROW LEVEL SECURITY and the tenant_isolation policy on assessments
+ *      are unaffected by these column ALTERs — no manual RLS re-assert needed).
+ *   10. Seed academies org_A / org_B and one membership each (superuser bypasses
  *      RLS here — FORCE RLS applies to the owner but NOT to superusers, so seeds
  *      flow through without tenant context).
- *   10. Seed minimal course/module/lesson/enrollment/progress rows for both orgs
+ *   11. Seed minimal course/module/lesson/enrollment/progress rows for both orgs
  *      so cross-tenant RLS assertions have rows on both sides to compare against.
  *
  * Returns a teardown function (no-op — the container is torn down externally).
@@ -142,6 +148,19 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       'utf-8',
     );
     await sql.unsafe(rawExternalUrl);
+
+    // 6c. Apply 0003_final_quiz_authoring.sql — reshapes assessments to
+    //     course-scoped typed JSONB questions. Multiple statements, split on
+    //     the statement-breakpoint marker like the 0000/0001 migrations.
+    const raw0003 = readFileSync(join(DRIZZLE_DIR, '0003_final_quiz_authoring.sql'), 'utf-8');
+    const stmts0003 = raw0003
+      .split('--> statement-breakpoint')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    for (const stmt of stmts0003) {
+      await sql.unsafe(stmt);
+    }
 
     // 7. Seed two academies and one membership each.
     //    Superuser bypasses RLS (FORCE RLS subjects owner but NOT superuser),
@@ -277,15 +296,15 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       ON CONFLICT (id) DO NOTHING
     `;
 
-    // assessments — one per module (UNIQUE module_id constraint)
+    // assessments — one per course (UNIQUE course_id constraint)
     await sql`
-      INSERT INTO assessments (id, module_id, academy_id, title)
-      VALUES ('a0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000002', 'org_A', 'Assessment A1')
+      INSERT INTO assessments (id, course_id, academy_id, title, questions)
+      VALUES ('a0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000001', 'org_A', 'Assessment A1', '[]')
       ON CONFLICT (id) DO NOTHING
     `;
     await sql`
-      INSERT INTO assessments (id, module_id, academy_id, title)
-      VALUES ('b0000000-0000-0000-0000-000000000008', 'b0000000-0000-0000-0000-000000000002', 'org_B', 'Assessment B1')
+      INSERT INTO assessments (id, course_id, academy_id, title, questions)
+      VALUES ('b0000000-0000-0000-0000-000000000008', 'b0000000-0000-0000-0000-000000000001', 'org_B', 'Assessment B1', '[]')
       ON CONFLICT (id) DO NOTHING
     `;
   } finally {

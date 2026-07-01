@@ -5,8 +5,11 @@
  * built-in Module namespace and to make the domain context explicit at every
  * import site.
  *
- * A CourseModule groups lessons within a course and optionally links to an
- * Assessment. Position is a 1-based integer managed by the reorder use-case.
+ * A CourseModule groups lessons within a course. Position is a 1-based
+ * integer managed by the reorder use-case.
+ *
+ * The course's final quiz (Assessment) is course-scoped, not module-scoped —
+ * see assessment.entity.ts.
  *
  * Pure TS — zero infrastructure imports.
  */
@@ -17,8 +20,6 @@ export interface CourseModuleProps {
   title: string;
   description?: string | null;
   position: number;
-  /** FK to assessments.id — null until an assessment is created for this module. */
-  assessmentId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,7 +31,6 @@ export class CourseModule {
   readonly title: string;
   readonly description: string | null;
   readonly position: number;
-  readonly assessmentId: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 
@@ -46,7 +46,6 @@ export class CourseModule {
     this.title = props.title;
     this.description = props.description ?? null;
     this.position = props.position;
-    this.assessmentId = props.assessmentId ?? null;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }
