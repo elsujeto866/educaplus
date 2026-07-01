@@ -68,7 +68,7 @@ describe('createCourseAction', () => {
     expect(createCourseExecuteMock).not.toHaveBeenCalled();
   });
 
-  it('creates the course, revalidates the list, and redirects on success', async () => {
+  it('creates the course, revalidates the list, and redirects to the new course detail page', async () => {
     createCourseExecuteMock.mockResolvedValue({ id: 'course-new' });
     const { createCourseAction } = await import('../../../src/app/dashboard/courses/actions');
 
@@ -85,7 +85,7 @@ describe('createCourseAction', () => {
       }),
     );
     expect(revalidatePathMock).toHaveBeenCalledWith('/dashboard/courses');
-    expect(redirectMock).toHaveBeenCalledWith('/dashboard/courses');
+    expect(redirectMock).toHaveBeenCalledWith('/dashboard/courses/course-new');
   });
 
   it('maps a domain error thrown by the use-case to a Spanish ActionResult and does NOT redirect', async () => {

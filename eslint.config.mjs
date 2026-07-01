@@ -72,8 +72,11 @@ const eslintConfig = defineConfig([
             { from: 'composition', allow: ['application', 'infrastructure'] },
             // delivery (app/): thin HTTP/RSC adapter; intra-app imports (CSS, fonts) allowed
             { from: 'delivery', allow: ['delivery', 'composition', 'shared-ui', 'shared-lib', 'shared-config', 'shared-infra', 'shared-kernel'] },
-            // shared-ui: presentational atoms/molecules; only framework-agnostic utils
-            { from: 'shared-ui', allow: ['shared-lib'] },
+            // shared-ui: presentational atoms/molecules/organisms; intra-layer composition
+            // allowed (organisms compose atoms/molecules, e.g. ConfirmDialog uses Button+Card)
+            // — mirrors 'domain' allowing intra-domain imports below. Only framework-agnostic
+            // utils otherwise.
+            { from: 'shared-ui', allow: ['shared-ui', 'shared-lib'] },
             // shared-infra: cross-cutting platform adapters (db/auth/ai); may read kernel types
             { from: 'shared-infra', allow: ['shared-config', 'shared-lib', 'shared-kernel'] },
             // shared-kernel: pure — imports nothing from the element graph

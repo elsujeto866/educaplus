@@ -52,8 +52,9 @@ export async function createCourseAction(
 
   const ctx = await getTenantContext();
 
+  let course;
   try {
-    await makeCourseComposition().createCourse.execute(ctx, {
+    course = await makeCourseComposition().createCourse.execute(ctx, {
       id: crypto.randomUUID(),
       academyId: ctx.orgId,
       title: parsed.data.title,
@@ -63,10 +64,87 @@ export async function createCourseAction(
     return toActionError(error);
   }
 
-  // NOTE (slice 2 → slice 3 handoff): the course detail page
-  // (`dashboard/courses/[courseId]`) is not built yet, so we redirect to
-  // the list instead of the new course's detail route. Revisit once
-  // slice 3 lands.
+  revalidatePath('/dashboard/courses');
+  redirect(`/dashboard/courses/${course.id}`);
+}
+
+// ---------------------------------------------------------------------------
+// Course detail (slice 3): edit, publish/unpublish, delete, module management
+// ---------------------------------------------------------------------------
+
+const updateCourseSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(3, 'El título debe tener al menos 3 caracteres.')
+    .max(200, 'El título es demasiado largo.'),
+  description: z
+    .string()
+    .trim()
+    .max(2000, 'La descripción es demasiado larga.')
+    .optional(),
+});
+
+/**
+ * Edits title/description. Stays on the detail page on success — the
+ * `useActionState` caller re-renders with `{ ok: true }`, no redirect
+ * (design.md §6: "edit title/desc | revalidatePath('/dashboard/courses/{id}')
+ * (stay)").
+ */
+export async function updateCourseAction(
+  courseId: string,
+  _prevState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const rawDescription = formData.get('description');
+
+  const parsed = updateCourseSchema.safeParse({
+    title: (formData.get('title') ?? '').toString(),
+    description: rawDescription ? rawDescription.toString() : undefined,
+  });
+
+  if (!parsed.success) {
+    return { ok: false, error: firstZodMessage(parsed.error) };
+  }
+
+  const ctx = await getTenantContext();
+
+  try {
+    await makeCourseComposition().updateCourse.execute(ctx, {
+      id: courseId,
+      title: parsed.data.title,
+      description: parsed.data.description ?? null,
+    });
+  } catch (error) {
+    return toActionError(error);
+  }
+
+  revalidatePath(`/dashboard/courses/${courseId}`);
+  return { ok: true };
+}
+
+/**
+ * Fire-and-forget status toggles (publish/unpublish/delete) and reorder —
+ * bound to `<form action={...}>` without `useActionState`, matching
+ * design.md §2's "buttons" skeleton. The page-level `requireInstructor`
+ * gate already restricts who reaches these forms; errors propagate to
+ * Next's error boundary instead of a Spanish inline message.
+ */
+export async function publishCourseAction(courseId: string, _formData: FormData): Promise<void> {
+  const ctx = await getTenantContext();
+  await makeCourseComposition().publishCourse.execute(ctx, { id: courseId });
+  revalidatePath(`/dashboard/courses/${courseId}`);
+}
+
+export async function unpublishCourseAction(courseId: string, _formData: FormData): Promise<void> {
+  const ctx = await getTenantContext();
+  await makeCourseComposition().unpublishCourse.execute(ctx, { id: courseId });
+  revalidatePath(`/dashboard/courses/${courseId}`);
+}
+
+export async function deleteCourseAction(courseId: string, _formData: FormData): Promise<void> {
+  const ctx = await getTenantContext();
+  await makeCourseComposition().deleteCourse.execute(ctx, { id: courseId });
   revalidatePath('/dashboard/courses');
   redirect('/dashboard/courses');
 }
