@@ -6,6 +6,7 @@ import { makeAcademyComposition } from '@/modules/academy/composition';
 import { Card } from '@/shared/ui/atoms/card';
 import { PageHeader } from '@/shared/ui/molecules/page-header';
 import { AppShell } from '@/shared/ui/organisms/app-shell';
+import { CoursesNavLink } from './courses/_lib/courses-nav-link';
 import { UserMenu } from './_components/user-menu';
 import { ProvisioningPending } from './_components/provisioning-pending';
 
@@ -97,7 +98,7 @@ export default async function DashboardPage() {
   const memberCount = await getMemberCount(ctx.orgId);
 
   return (
-    <AppShell userSlot={<UserMenu />}>
+    <AppShell navSlot={<CoursesNavLink ctx={ctx} />} userSlot={<UserMenu />}>
       <div className="mx-auto flex w-full max-w-sm flex-col gap-6">
         <PageHeader title={academy.name} />
         <Card className="flex flex-col gap-4">
