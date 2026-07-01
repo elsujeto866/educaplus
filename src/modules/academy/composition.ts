@@ -1,12 +1,14 @@
 import { DrizzleAcademyRepository } from './infrastructure/drizzle-academy.repository';
 import { DrizzleMembershipRepository } from './infrastructure/drizzle-membership.repository';
 import { ProvisionAcademyUseCase } from './application/provision-academy.use-case';
+import { GetAcademyUseCase } from './application/get-academy.use-case';
 import { SyncMembershipUseCase } from './application/sync-membership.use-case';
 import { DeleteAcademyUseCase } from './application/delete-academy.use-case';
 import { DeleteMembershipUseCase } from './application/delete-membership.use-case';
 
 export interface AcademyComposition {
   provisionAcademy: ProvisionAcademyUseCase;
+  getAcademy: GetAcademyUseCase;
   syncMembership: SyncMembershipUseCase;
   deleteAcademy: DeleteAcademyUseCase;
   deleteMembership: DeleteMembershipUseCase;
@@ -25,6 +27,7 @@ export function makeAcademyComposition(): AcademyComposition {
 
   return {
     provisionAcademy: new ProvisionAcademyUseCase(academyRepo),
+    getAcademy: new GetAcademyUseCase(academyRepo),
     syncMembership: new SyncMembershipUseCase(membershipRepo),
     deleteAcademy: new DeleteAcademyUseCase(academyRepo),
     deleteMembership: new DeleteMembershipUseCase(membershipRepo),
