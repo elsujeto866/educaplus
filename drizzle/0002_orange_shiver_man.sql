@@ -1,0 +1,1 @@
+ALTER TABLE "lesson_video_assets" ADD COLUMN "external_url" text;

@@ -15,6 +15,13 @@
       "when": 1782840506199,
       "tag": "0001_careful_starbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782868777129,
+      "tag": "0002_orange_shiver_man",
+      "breakpoints": true
     }
   ]
 }

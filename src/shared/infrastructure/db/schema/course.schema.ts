@@ -211,6 +211,8 @@ export const lessonVideoAssets = pgTable(
     cloudflareUid: text('cloudflare_uid'),
     durationSeconds: integer('duration_seconds'),
     thumbnailUrl: text('thumbnail_url'),
+    /** Nullable — external video source (YouTube/Vimeo) as an alternative to the Cloudflare pipeline. */
+    externalUrl: text('external_url'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

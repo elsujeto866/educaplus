@@ -18,10 +18,13 @@
  *      RLS + policies + all FKs including the circular assessment ↔ module pair).
  *   7. Apply manual migration 0002_course_rls.sql (GRANT + FORCE ROW LEVEL
  *      SECURITY for all 9 new course tables).
- *   8. Seed academies org_A / org_B and one membership each (superuser bypasses
+ *   8. Apply drizzle migration 0002_orange_shiver_man.sql (adds nullable
+ *      external_url column to lesson_video_assets — no new RLS needed, the
+ *      existing tenant_isolation policy already covers the new column).
+ *   9. Seed academies org_A / org_B and one membership each (superuser bypasses
  *      RLS here — FORCE RLS applies to the owner but NOT to superusers, so seeds
  *      flow through without tenant context).
- *   9. Seed minimal course/module/lesson/enrollment/progress rows for both orgs
+ *   10. Seed minimal course/module/lesson/enrollment/progress rows for both orgs
  *      so cross-tenant RLS assertions have rows on both sides to compare against.
  *
  * Returns a teardown function (no-op — the container is torn down externally).
@@ -130,6 +133,15 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     //    for all 9 new course tables.
     const raw0002 = readFileSync(join(DRIZZLE_DIR, '0002_course_rls.sql'), 'utf-8');
     await sql.unsafe(raw0002);
+
+    // 6b. Apply 0002_orange_shiver_man.sql — adds nullable external_url column
+    //     to lesson_video_assets. Single ALTER TABLE statement, no RLS change
+    //     needed (existing tenant_isolation policy covers the new column).
+    const rawExternalUrl = readFileSync(
+      join(DRIZZLE_DIR, '0002_orange_shiver_man.sql'),
+      'utf-8',
+    );
+    await sql.unsafe(rawExternalUrl);
 
     // 7. Seed two academies and one membership each.
     //    Superuser bypasses RLS (FORCE RLS subjects owner but NOT superuser),
