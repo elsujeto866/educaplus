@@ -233,3 +233,213 @@ export async function reorderModuleDownAction(
 ): Promise<void> {
   await reorderModule(courseId, moduleId, 'down');
 }
+
+// ---------------------------------------------------------------------------
+// Lesson editor (slice 4): add lesson, save text/video body, reorder
+// ---------------------------------------------------------------------------
+
+const addLessonSchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(3, 'El título debe tener al menos 3 caracteres.')
+      .max(200, 'El título es demasiado largo.'),
+    type: z.enum(['text', 'video']),
+    externalUrl: z
+      .string()
+      .trim()
+      .url('Ingresá una URL válida.')
+      .optional()
+      .or(z.literal('')),
+  })
+  .refine((data) => data.type !== 'video' || Boolean(data.externalUrl), {
+    message: 'La URL del video es obligatoria.',
+    path: ['externalUrl'],
+  });
+
+/**
+ * Creates a lesson under a module. Text lessons start with an empty
+ * markdown envelope (`{ format: 'markdown', value: '' }`) — the instructor
+ * fills it in on the editor page right after being redirected there. Video
+ * lessons require an external URL up front (design.md §7: `external_url`
+ * IS the video source for this flow); the Cloudflare-pipeline fields start
+ * out null and are populated later by that pipeline, independently.
+ */
+export async function addLessonAction(
+  courseId: string,
+  moduleId: string,
+  _prevState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const rawExternalUrl = formData.get('externalUrl');
+
+  const parsed = addLessonSchema.safeParse({
+    title: (formData.get('title') ?? '').toString(),
+    type: (formData.get('type') ?? '').toString(),
+    externalUrl: rawExternalUrl ? rawExternalUrl.toString() : undefined,
+  });
+
+  if (!parsed.success) {
+    return { ok: false, error: firstZodMessage(parsed.error) };
+  }
+
+  const ctx = await getTenantContext();
+
+  const content =
+    parsed.data.type === 'video'
+      ? {
+          type: 'video' as const,
+          cloudflareUid: null,
+          durationSeconds: null,
+          thumbnailUrl: null,
+          externalUrl: parsed.data.externalUrl || null,
+        }
+      : { type: 'text' as const, body: { format: 'markdown', value: '' } };
+
+  let lesson;
+  try {
+    lesson = await makeCourseComposition().addLesson.execute(ctx, {
+      id: crypto.randomUUID(),
+      moduleId,
+      academyId: ctx.orgId,
+      type: parsed.data.type,
+      title: parsed.data.title,
+      content,
+    });
+  } catch (error) {
+    return toActionError(error);
+  }
+
+  revalidatePath(`/dashboard/courses/${courseId}`);
+  redirect(`/dashboard/courses/${courseId}/lessons/${lesson.id}`);
+}
+
+const updateLessonBodySchema = z.object({
+  body: z.string().trim().max(50_000, 'El contenido es demasiado largo.'),
+});
+
+/** Saves a text lesson's markdown body as the `{ format, value }` envelope. */
+export async function updateLessonBodyAction(
+  courseId: string,
+  lessonId: string,
+  _prevState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const parsed = updateLessonBodySchema.safeParse({
+    body: (formData.get('body') ?? '').toString(),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, error: firstZodMessage(parsed.error) };
+  }
+
+  const ctx = await getTenantContext();
+
+  try {
+    await makeCourseComposition().updateLessonBody.execute(ctx, {
+      lessonId,
+      content: { type: 'text', body: { format: 'markdown', value: parsed.data.body } },
+    });
+  } catch (error) {
+    return toActionError(error);
+  }
+
+  revalidatePath(`/dashboard/courses/${courseId}/lessons/${lessonId}`);
+  return { ok: true };
+}
+
+const updateLessonVideoUrlSchema = z.object({
+  externalUrl: z.string().trim().url('Ingresá una URL válida.'),
+});
+
+/**
+ * Saves a video lesson's external URL. Fetches the existing lesson first so
+ * the Cloudflare-pipeline fields (`cloudflareUid`, `durationSeconds`,
+ * `thumbnailUrl`) are preserved — `updateLessonBody` replaces the whole
+ * content payload, not a partial patch.
+ */
+export async function updateLessonVideoUrlAction(
+  courseId: string,
+  lessonId: string,
+  _prevState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const parsed = updateLessonVideoUrlSchema.safeParse({
+    externalUrl: (formData.get('externalUrl') ?? '').toString(),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, error: firstZodMessage(parsed.error) };
+  }
+
+  const ctx = await getTenantContext();
+
+  try {
+    const composition = makeCourseComposition();
+    const existing = await composition.getLesson.execute(ctx, lessonId);
+    if (!existing || existing.content.type !== 'video') {
+      return { ok: false, error: 'No se pudo actualizar la lección.' };
+    }
+
+    await composition.updateLessonBody.execute(ctx, {
+      lessonId,
+      content: { ...existing.content, externalUrl: parsed.data.externalUrl },
+    });
+  } catch (error) {
+    return toActionError(error);
+  }
+
+  revalidatePath(`/dashboard/courses/${courseId}/lessons/${lessonId}`);
+  return { ok: true };
+}
+
+/**
+ * Shared reorder implementation for lessons within a module — mirrors
+ * `reorderModule` above. Loads the module's ordered lesson ids via
+ * `getCourseDetail` (already returns lessons ordered by position per
+ * module), computes the swap with the same pure `computeReorderedIds`, and
+ * only calls `reorderLessons.execute` when the order actually changes.
+ */
+async function reorderLesson(
+  courseId: string,
+  moduleId: string,
+  lessonId: string,
+  direction: ReorderDirection,
+): Promise<void> {
+  const ctx = await getTenantContext();
+  const detail = await makeCourseComposition().getCourseDetail.execute(ctx, courseId);
+  const mod = detail?.modules.find((candidate) => candidate.id === moduleId);
+
+  if (!mod) {
+    revalidatePath(`/dashboard/courses/${courseId}`);
+    return;
+  }
+
+  const orderedIds = mod.lessons.map((lesson) => lesson.id);
+  const reordered = computeReorderedIds(orderedIds, lessonId, direction);
+
+  if (reordered !== orderedIds) {
+    await makeCourseComposition().reorderLessons.execute(ctx, { moduleId, orderedIds: reordered });
+  }
+
+  revalidatePath(`/dashboard/courses/${courseId}`);
+}
+
+export async function reorderLessonUpAction(
+  courseId: string,
+  moduleId: string,
+  lessonId: string,
+  _formData: FormData,
+): Promise<void> {
+  await reorderLesson(courseId, moduleId, lessonId, 'up');
+}
+
+export async function reorderLessonDownAction(
+  courseId: string,
+  moduleId: string,
+  lessonId: string,
+  _formData: FormData,
+): Promise<void> {
+  await reorderLesson(courseId, moduleId, lessonId, 'down');
+}
