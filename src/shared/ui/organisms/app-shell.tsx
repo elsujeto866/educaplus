@@ -17,15 +17,24 @@ interface AppShellProps {
    * eslint.config.mjs. The caller (delivery layer) passes it in.
    */
   userSlot?: ReactNode;
+  /**
+   * Optional secondary pane rendered as an `<aside>` left of `children`,
+   * below the header (e.g. `CourseOutlineNav`). Backward-compatible: when
+   * omitted, `AppShell` renders exactly as before (single-pane, no aside
+   * in the DOM). Kept as a slot — same rationale as `navSlot`/`userSlot` —
+   * shared-ui may not own route-aware or Clerk-bound children directly.
+   */
+  sidebar?: ReactNode;
   className?: string;
 }
 
 /**
- * Presentational app shell — sticky header + main content area.
+ * Presentational app shell — sticky header + main content area, with an
+ * optional two-pane (aside + main) body when `sidebar` is passed.
  * Mobile-first: header stacks horizontally with a compact height at
  * 375px; content area gets safe horizontal padding.
  */
-export function AppShell({ children, navSlot, userSlot, className }: AppShellProps) {
+export function AppShell({ children, navSlot, userSlot, sidebar, className }: AppShellProps) {
   return (
     <div className={cn('min-h-screen flex flex-col bg-background', className)}>
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface px-4 py-3">
@@ -35,7 +44,16 @@ export function AppShell({ children, navSlot, userSlot, className }: AppShellPro
         </div>
         {userSlot}
       </header>
-      <main className="flex-1 px-4 py-6">{children}</main>
+      {sidebar ? (
+        <div className="flex flex-1 flex-col md:flex-row">
+          <aside className="border-b border-border bg-surface md:border-b-0 md:border-r">
+            {sidebar}
+          </aside>
+          <main className="flex-1 px-4 py-6">{children}</main>
+        </div>
+      ) : (
+        <main className="flex-1 px-4 py-6">{children}</main>
+      )}
     </div>
   );
 }

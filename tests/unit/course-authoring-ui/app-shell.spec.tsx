@@ -23,3 +23,27 @@ describe('AppShell navSlot', () => {
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });
+
+describe('AppShell sidebar slot', () => {
+  it('renders a single pane (no aside) when no sidebar prop is passed', () => {
+    render(
+      <AppShell>
+        <p>content</p>
+      </AppShell>,
+    );
+
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveTextContent('content');
+  });
+
+  it('renders a two-pane layout (aside + main) when a sidebar prop is passed', () => {
+    render(
+      <AppShell sidebar={<p>Sidebar content</p>}>
+        <p>Main content</p>
+      </AppShell>,
+    );
+
+    expect(screen.getByRole('complementary')).toHaveTextContent('Sidebar content');
+    expect(screen.getByRole('main')).toHaveTextContent('Main content');
+  });
+});

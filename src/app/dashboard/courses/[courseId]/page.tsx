@@ -2,10 +2,12 @@ import { notFound } from 'next/navigation';
 import { getTenantContext } from '@/shared/infrastructure/auth/clerk';
 import { makeCourseComposition } from '@/modules/course/composition';
 import { AppShell } from '@/shared/ui/organisms/app-shell';
+import { CourseOutlineNav } from '@/shared/ui/organisms/course-outline-nav';
 import { PageHeader } from '@/shared/ui/molecules/page-header';
 import { UserMenu } from '../../_components/user-menu';
 import { CoursesNavLink } from '../_lib/courses-nav-link';
 import { requireInstructor } from '../_lib/require-instructor';
+import { toCourseOutline } from '../_lib/course-outline';
 import { CourseEditForm } from './_components/course-edit-form';
 import { CourseStatusActions } from './_components/course-status-actions';
 import { ModulesList } from './_components/modules-list';
@@ -32,7 +34,11 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
   if (!detail) notFound();
 
   return (
-    <AppShell navSlot={<CoursesNavLink ctx={ctx} />} userSlot={<UserMenu />}>
+    <AppShell
+      navSlot={<CoursesNavLink ctx={ctx} />}
+      userSlot={<UserMenu />}
+      sidebar={<CourseOutlineNav outline={toCourseOutline(detail)} />}
+    >
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <PageHeader title={detail.course.title} subtitle="Editá el curso y organizá sus módulos." />
         <CourseEditForm

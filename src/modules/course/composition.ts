@@ -12,6 +12,8 @@ import { ListPublishedCoursesUseCase } from './application/list-published-course
 import { ListMyEnrollmentsUseCase } from './application/list-my-enrollments.use-case';
 import { GetEnrolledCourseUseCase } from './application/get-enrolled-course.use-case';
 import { GetCourseDetailUseCase } from './application/get-course-detail.use-case';
+export type { EnrolledCourseView } from './application/get-enrolled-course.use-case';
+export type { CourseDetailView } from './application/get-course-detail.use-case';
 import { GetLessonUseCase } from './application/get-lesson.use-case';
 import { UpdateCourseUseCase } from './application/update-course.use-case';
 import { PublishCourseUseCase } from './application/publish-course.use-case';

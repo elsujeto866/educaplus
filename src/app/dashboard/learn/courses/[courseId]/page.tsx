@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getTenantContext } from '@/shared/infrastructure/auth/clerk';
 import { makeCourseComposition } from '@/modules/course/composition';
 import { AppShell } from '@/shared/ui/organisms/app-shell';
+import { CourseOutlineNav } from '@/shared/ui/organisms/course-outline-nav';
 import { PageHeader } from '@/shared/ui/molecules/page-header';
 import { Card } from '@/shared/ui/atoms/card';
 import { Badge } from '@/shared/ui/atoms/badge';
@@ -10,6 +11,7 @@ import { ProgressBar } from '@/shared/ui/molecules/progress-bar';
 import { LessonListItem } from '@/shared/ui/molecules/lesson-list-item';
 import { UserMenu } from '../../../_components/user-menu';
 import { EnrollButton } from '../../_components/enroll-button';
+import { toCourseOutline } from '../../_lib/course-outline';
 
 interface CourseViewerPageProps {
   params: Promise<{ courseId: string }>;
@@ -44,6 +46,7 @@ export default async function CourseViewerPage({ params }: CourseViewerPageProps
         </Link>
       }
       userSlot={<UserMenu />}
+      sidebar={<CourseOutlineNav outline={toCourseOutline(view)} />}
     >
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <PageHeader title={course.title} subtitle={course.description ?? ''} />
