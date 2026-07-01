@@ -19,6 +19,12 @@ export interface CourseRepository {
   /** Returns all courses for the tenant academy, ordered by position. */
   findByAcademy(ctx: TenantContext, academyId: string): Promise<Course[]>;
 
+  /**
+   * Returns only published courses for the tenant academy, ordered by position.
+   * Used by learner-facing catalog reads — filters in SQL to avoid loading drafts.
+   */
+  findPublishedByAcademy(ctx: TenantContext, academyId: string): Promise<Course[]>;
+
   update(ctx: TenantContext, course: Course): Promise<void>;
 
   delete(ctx: TenantContext, id: string): Promise<void>;

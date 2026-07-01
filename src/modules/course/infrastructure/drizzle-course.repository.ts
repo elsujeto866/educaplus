@@ -80,6 +80,17 @@ export class DrizzleCourseRepository implements CourseRepository {
     });
   }
 
+  async findPublishedByAcademy(ctx: TenantContext, academyId: string): Promise<Course[]> {
+    return withTenant(ctx, async (tx) => {
+      const rows = await tx
+        .select()
+        .from(courses)
+        .where(and(eq(courses.academyId, academyId), eq(courses.status, 'published')))
+        .orderBy(asc(courses.position));
+      return rows.map(toEntity);
+    });
+  }
+
   async update(ctx: TenantContext, course: Course): Promise<void> {
     await withTenant(ctx, (tx) =>
       tx

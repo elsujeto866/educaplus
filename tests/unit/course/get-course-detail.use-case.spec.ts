@@ -85,6 +85,7 @@ function makeRepos(overrides: {
       delete: vi.fn(),
       existsBySlug: vi.fn(),
       maxPositionByAcademy: vi.fn(),
+      findPublishedByAcademy: vi.fn(),
       ...overrides.courseRepo,
     },
     moduleRepo: {

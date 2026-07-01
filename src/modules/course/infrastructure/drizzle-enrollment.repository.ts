@@ -78,6 +78,16 @@ export class DrizzleEnrollmentRepository implements EnrollmentRepository {
     });
   }
 
+  async findByLearner(ctx: TenantContext, clerkUserId: string): Promise<Enrollment[]> {
+    return withTenant(ctx, async (tx) => {
+      const rows = await tx
+        .select()
+        .from(enrollments)
+        .where(eq(enrollments.clerkUserId, clerkUserId));
+      return rows.map(toEntity);
+    });
+  }
+
   async update(ctx: TenantContext, enrollment: Enrollment): Promise<void> {
     await withTenant(ctx, (tx) =>
       tx

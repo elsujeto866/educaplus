@@ -23,6 +23,14 @@ export interface EnrollmentRepository {
   /** Returns all enrollments for a course. */
   findByCourse(ctx: TenantContext, courseId: string): Promise<Enrollment[]>;
 
+  /**
+   * Returns all enrollments for the caller across the tenant academy — used
+   * by the learner's "My Courses" list. RLS already scopes academy_id; a
+   * dedicated clerk_user_id index is deferred (see design doc) — acceptable
+   * for current data volume, revisit when enrollments grow.
+   */
+  findByLearner(ctx: TenantContext, clerkUserId: string): Promise<Enrollment[]>;
+
   /** Persists completedAt update after course-% reaches 100. */
   update(ctx: TenantContext, enrollment: Enrollment): Promise<void>;
 

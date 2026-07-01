@@ -121,6 +121,7 @@ describe('CreateCourseUseCase', () => {
       delete: vi.fn(),
       existsBySlug: vi.fn().mockResolvedValue(false),
       maxPositionByAcademy: vi.fn().mockResolvedValue(0),
+      findPublishedByAcademy: vi.fn(),
     };
     useCase = new CreateCourseUseCase(courseRepo);
   });
@@ -181,6 +182,7 @@ describe('publish/unpublish cycle', () => {
       delete: vi.fn(),
       existsBySlug: vi.fn(),
       maxPositionByAcademy: vi.fn(),
+      findPublishedByAcademy: vi.fn(),
     };
   });
 
@@ -231,6 +233,7 @@ describe('UpdateCourseUseCase', () => {
       delete: vi.fn(),
       existsBySlug: vi.fn().mockResolvedValue(true),
       maxPositionByAcademy: vi.fn(),
+      findPublishedByAcademy: vi.fn(),
     };
 
     const useCase = new UpdateCourseUseCase(courseRepo);
@@ -430,12 +433,14 @@ describe('EnrollLearnerUseCase', () => {
         delete: vi.fn(),
         existsBySlug: vi.fn(),
         maxPositionByAcademy: vi.fn(),
+        findPublishedByAcademy: vi.fn(),
       },
       enrollmentRepo: {
         create: vi.fn().mockResolvedValue(undefined),
         findById: vi.fn(),
         findByCourseAndUser: vi.fn(),
         findByCourse: vi.fn(),
+        findByLearner: vi.fn(),
         update: vi.fn(),
         existsByCourseAndUser: vi.fn().mockResolvedValue(alreadyEnrolled),
       },
@@ -508,6 +513,7 @@ describe('MarkLessonCompleteUseCase', () => {
       findById: vi.fn().mockResolvedValue(enrollment),
       findByCourseAndUser: vi.fn(),
       findByCourse: vi.fn(),
+      findByLearner: vi.fn(),
       update: vi.fn().mockResolvedValue(undefined),
       existsByCourseAndUser: vi.fn(),
     };
@@ -554,6 +560,7 @@ describe('MarkLessonCompleteUseCase', () => {
       findById: vi.fn().mockResolvedValue(enrollment),
       findByCourseAndUser: vi.fn(),
       findByCourse: vi.fn(),
+      findByLearner: vi.fn(),
       update: vi.fn(),
       existsByCourseAndUser: vi.fn(),
     };
@@ -600,6 +607,7 @@ describe('MarkLessonCompleteUseCase', () => {
       findById: vi.fn().mockResolvedValue(enrollment),
       findByCourseAndUser: vi.fn(),
       findByCourse: vi.fn(),
+      findByLearner: vi.fn(),
       update: vi.fn(),
       existsByCourseAndUser: vi.fn(),
     };

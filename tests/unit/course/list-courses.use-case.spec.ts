@@ -41,6 +41,7 @@ function makeCourseRepo(overrides: Partial<CourseRepository> = {}): CourseReposi
     delete: vi.fn(),
     existsBySlug: vi.fn(),
     maxPositionByAcademy: vi.fn(),
+    findPublishedByAcademy: vi.fn(),
     ...overrides,
   };
 }
