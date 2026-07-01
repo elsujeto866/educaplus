@@ -3,11 +3,13 @@ import { getTenantContext } from '@/shared/infrastructure/auth/clerk';
 import { makeCourseComposition } from '@/modules/course/composition';
 import { AppShell } from '@/shared/ui/organisms/app-shell';
 import { CourseOutlineNav } from '@/shared/ui/organisms/course-outline-nav';
+import { CourseWizardSteps } from '@/shared/ui/molecules/course-wizard-steps';
 import { PageHeader } from '@/shared/ui/molecules/page-header';
 import { UserMenu } from '../../_components/user-menu';
 import { CoursesNavLink } from '../_lib/courses-nav-link';
 import { requireInstructor } from '../_lib/require-instructor';
 import { toCourseOutline } from '../_lib/course-outline';
+import { computeCourseWizard } from './_lib/course-wizard';
 import { CourseEditForm } from './_components/course-edit-form';
 import { CourseStatusActions } from './_components/course-status-actions';
 import { ModulesList } from './_components/modules-list';
@@ -33,6 +35,8 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
   const detail = await makeCourseComposition().getCourseDetail.execute(ctx, courseId);
   if (!detail) notFound();
 
+  const wizard = computeCourseWizard(detail);
+
   return (
     <AppShell
       navSlot={<CoursesNavLink ctx={ctx} />}
@@ -41,6 +45,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
     >
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <PageHeader title={detail.course.title} subtitle="Editá el curso y organizá sus módulos." />
+        <CourseWizardSteps steps={wizard.steps} />
         <CourseEditForm
           courseId={detail.course.id}
           title={detail.course.title}
