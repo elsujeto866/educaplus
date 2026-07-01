@@ -13,8 +13,8 @@ export function ProvisioningPending() {
   return (
     <Card className="w-full max-w-sm">
       <PageHeader
-        title="Setting up your academy"
-        subtitle="This usually takes just a moment. Refresh the page shortly."
+        title="Configurando tu academia"
+        subtitle="Esto suele tardar solo un momento. Actualizá la página en breve."
       />
     </Card>
   );

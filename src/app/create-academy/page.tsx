@@ -32,8 +32,8 @@ export default async function CreateAcademyPage() {
       {canCreateAcademy ? (
         <>
           <PageHeader
-            title="Create your academy"
-            subtitle="Set up your organization to start teaching."
+            title="Creá tu academia"
+            subtitle="Configurá tu organización para empezar a enseñar."
           />
           <CreateAcademyForm />
         </>

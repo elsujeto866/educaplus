@@ -10,8 +10,8 @@ export function InviteOnlyScreen() {
   return (
     <Card className="w-full max-w-sm">
       <PageHeader
-        title="Invite-only"
-        subtitle="Your account is not enabled to create an academy yet. Ask an existing admin to invite you, or wait for approval."
+        title="Solo por invitación"
+        subtitle="Tu cuenta todavía no está habilitada para crear una academia. Pedile a un administrador que te invite, o esperá la aprobación."
       />
     </Card>
   );
