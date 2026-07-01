@@ -8,6 +8,9 @@ import { DrizzleAssessmentRepository } from './infrastructure/drizzle-assessment
 import { DrizzleProgressQuery } from './infrastructure/drizzle-progress-query';
 import { CreateCourseUseCase } from './application/create-course.use-case';
 import { ListCoursesUseCase } from './application/list-courses.use-case';
+import { ListPublishedCoursesUseCase } from './application/list-published-courses.use-case';
+import { ListMyEnrollmentsUseCase } from './application/list-my-enrollments.use-case';
+import { GetEnrolledCourseUseCase } from './application/get-enrolled-course.use-case';
 import { GetCourseDetailUseCase } from './application/get-course-detail.use-case';
 import { GetLessonUseCase } from './application/get-lesson.use-case';
 import { UpdateCourseUseCase } from './application/update-course.use-case';
@@ -29,6 +32,9 @@ import { UpsertAssessmentUseCase } from './application/upsert-assessment.use-cas
 export interface CourseComposition {
   createCourse: CreateCourseUseCase;
   listCourses: ListCoursesUseCase;
+  listPublishedCourses: ListPublishedCoursesUseCase;
+  listMyEnrollments: ListMyEnrollmentsUseCase;
+  getEnrolledCourse: GetEnrolledCourseUseCase;
   getCourseDetail: GetCourseDetailUseCase;
   getLesson: GetLessonUseCase;
   updateCourse: UpdateCourseUseCase;
@@ -70,6 +76,16 @@ export function makeCourseComposition(): CourseComposition {
   return {
     createCourse: new CreateCourseUseCase(courseRepo),
     listCourses: new ListCoursesUseCase(courseRepo),
+    listPublishedCourses: new ListPublishedCoursesUseCase(courseRepo),
+    listMyEnrollments: new ListMyEnrollmentsUseCase(enrollmentRepo),
+    getEnrolledCourse: new GetEnrolledCourseUseCase(
+      courseRepo,
+      moduleRepo,
+      lessonRepo,
+      enrollmentRepo,
+      lessonProgressRepo,
+      progressQuery,
+    ),
     getCourseDetail: new GetCourseDetailUseCase(courseRepo, moduleRepo, lessonRepo),
     getLesson: new GetLessonUseCase(lessonRepo),
     updateCourse: new UpdateCourseUseCase(courseRepo),
