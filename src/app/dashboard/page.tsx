@@ -1,12 +1,24 @@
 import Link from 'next/link';
 import { clerkClient } from '@clerk/nextjs/server';
 import { getTenantContext } from '@/shared/infrastructure/auth/clerk';
+import type { Role } from '@/shared/kernel/tenant-context';
 import { makeAcademyComposition } from '@/modules/academy/composition';
 import { Card } from '@/shared/ui/atoms/card';
 import { PageHeader } from '@/shared/ui/molecules/page-header';
 import { AppShell } from '@/shared/ui/organisms/app-shell';
 import { UserMenu } from './_components/user-menu';
 import { ProvisioningPending } from './_components/provisioning-pending';
+
+/**
+ * UI-only Spanish labels for domain roles. Presentation concern, so it
+ * lives in the delivery layer next to the page that renders it rather
+ * than in the shared kernel (which stays free of copy/i18n concerns).
+ */
+const ROLE_LABEL: Record<Role, string> = {
+  admin: 'Administrador',
+  instructor: 'Instructor',
+  student: 'Estudiante',
+};
 
 /**
  * Best-effort member count lookup. Prefers `Organization.membersCount`
@@ -90,15 +102,15 @@ export default async function DashboardPage() {
         <PageHeader title={academy.name} subtitle={`/${academy.slug}`} />
         <Card className="flex flex-col gap-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Your role</span>
+            <span className="text-muted-foreground">Tu rol</span>
             <span className="rounded-full border border-border bg-surface-elevated px-3 py-1 text-xs font-medium uppercase tracking-wide text-primary">
-              {ctx.role}
+              {ROLE_LABEL[ctx.role]}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Members</span>
+            <span className="text-muted-foreground">Miembros</span>
             <span className="font-medium text-foreground">
-              {memberCount ?? '—'}
+              {memberCount !== undefined ? `${memberCount} miembros` : '—'}
             </span>
           </div>
         </Card>
@@ -106,7 +118,7 @@ export default async function DashboardPage() {
           href="/dashboard/organization"
           className="rounded-lg border border-border bg-surface-elevated px-4 py-3 text-center text-sm font-medium text-primary transition-colors hover:bg-surface"
         >
-          Invite members
+          Invitar miembros
         </Link>
       </div>
     </AppShell>
