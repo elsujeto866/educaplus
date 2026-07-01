@@ -16,6 +16,7 @@ import { UnpublishCourseUseCase } from '../../../src/modules/course/application/
 import { AddModuleUseCase } from '../../../src/modules/course/application/add-module.use-case';
 import { ReorderModulesUseCase } from '../../../src/modules/course/application/reorder-modules.use-case';
 import { InvalidReorderError } from '../../../src/modules/course/domain/errors';
+import { AddLessonUseCase } from '../../../src/modules/course/application/add-lesson.use-case';
 import { ReorderLessonsUseCase } from '../../../src/modules/course/application/reorder-lessons.use-case';
 import { EnrollLearnerUseCase } from '../../../src/modules/course/application/enroll-learner.use-case';
 import { MarkLessonCompleteUseCase } from '../../../src/modules/course/application/mark-lesson-complete.use-case';
@@ -265,6 +266,78 @@ describe('AddModuleUseCase', () => {
 
     expect(mod.position).toBe(4);
     expect(moduleRepo.create).toHaveBeenCalledOnce();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 4b. AddLessonUseCase — video lesson external URL round-trip
+// ---------------------------------------------------------------------------
+
+describe('AddLessonUseCase', () => {
+  function makeLessonRepo(overrides: Partial<LessonRepository> = {}): LessonRepository {
+    return {
+      create: vi.fn().mockResolvedValue(undefined),
+      findById: vi.fn(),
+      findByModule: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      countByModule: vi.fn().mockResolvedValue(0),
+      reorder: vi.fn(),
+      ...overrides,
+    };
+  }
+
+  it('creates a video lesson carrying the given external URL', async () => {
+    const lessonRepo = makeLessonRepo();
+    const useCase = new AddLessonUseCase(lessonRepo);
+
+    const lesson = await useCase.execute(adminCtx, {
+      id: 'lesson-ext-1',
+      moduleId: 'mod-1',
+      academyId: 'org_A',
+      type: 'video',
+      title: 'External Video Lesson',
+      content: {
+        type: 'video',
+        cloudflareUid: null,
+        durationSeconds: null,
+        thumbnailUrl: null,
+        externalUrl: 'https://youtube.com/watch?v=abc123',
+      },
+    });
+
+    expect(lesson.content).toMatchObject({
+      type: 'video',
+      externalUrl: 'https://youtube.com/watch?v=abc123',
+    });
+    expect(lessonRepo.create).toHaveBeenCalledWith(
+      adminCtx,
+      expect.objectContaining({
+        content: expect.objectContaining({ externalUrl: 'https://youtube.com/watch?v=abc123' }),
+      }),
+    );
+  });
+
+  it('regression: creates a video lesson with no external URL (Cloudflare pipeline only)', async () => {
+    const lessonRepo = makeLessonRepo();
+    const useCase = new AddLessonUseCase(lessonRepo);
+
+    const lesson = await useCase.execute(adminCtx, {
+      id: 'lesson-cf-1',
+      moduleId: 'mod-1',
+      academyId: 'org_A',
+      type: 'video',
+      title: 'Cloudflare Video Lesson',
+      content: {
+        type: 'video',
+        cloudflareUid: null,
+        durationSeconds: null,
+        thumbnailUrl: null,
+        externalUrl: null,
+      },
+    });
+
+    expect(lesson.content).toMatchObject({ type: 'video', externalUrl: null });
   });
 });
 

@@ -27,6 +27,7 @@ function hydrateLesson(
       cloudflareUid: v?.cloudflareUid ?? null,
       durationSeconds: v?.durationSeconds ?? null,
       thumbnailUrl: v?.thumbnailUrl ?? null,
+      externalUrl: v?.externalUrl ?? null,
     } satisfies VideoContent;
   } else {
     const t = textMap.get(base.id);
@@ -84,6 +85,7 @@ export class DrizzleLessonRepository implements LessonRepository {
           cloudflareUid: content.cloudflareUid,
           durationSeconds: content.durationSeconds,
           thumbnailUrl: content.thumbnailUrl,
+          externalUrl: content.externalUrl,
         });
       } else {
         const content = lesson.content as TextContent;
@@ -178,6 +180,7 @@ export class DrizzleLessonRepository implements LessonRepository {
             cloudflareUid: content.cloudflareUid,
             durationSeconds: content.durationSeconds,
             thumbnailUrl: content.thumbnailUrl,
+            externalUrl: content.externalUrl,
             updatedAt: lesson.updatedAt,
           })
           .where(eq(lessonVideoAssets.lessonId, lesson.id));

@@ -33,6 +33,8 @@ export interface VideoContent {
   readonly cloudflareUid: string | null;
   readonly durationSeconds: number | null;
   readonly thumbnailUrl: string | null;
+  /** External video source (YouTube/Vimeo) — alternative to the Cloudflare pipeline. Coexists with cloudflareUid. */
+  readonly externalUrl: string | null;
 }
 
 export interface TextContent {

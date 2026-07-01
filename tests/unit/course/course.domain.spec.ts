@@ -176,12 +176,62 @@ describe('Lesson', () => {
         cloudflareUid: null,
         durationSeconds: null,
         thumbnailUrl: null,
+        externalUrl: null,
       },
       createdAt: now,
       updatedAt: now,
     });
     expect(lesson.type).toBe('video');
     expect(lesson.content.type).toBe('video');
+  });
+
+  it('carries an external video URL when the video content specifies one', () => {
+    const lesson = new Lesson({
+      id: 'lesson-ext-1',
+      moduleId: 'mod-1',
+      academyId: 'org_A',
+      type: 'video',
+      title: 'External Video Lesson',
+      position: 1,
+      content: {
+        type: 'video',
+        cloudflareUid: null,
+        durationSeconds: null,
+        thumbnailUrl: null,
+        externalUrl: 'https://youtube.com/watch?v=abc123',
+      },
+      createdAt: now,
+      updatedAt: now,
+    });
+    expect(lesson.content).toMatchObject({
+      type: 'video',
+      externalUrl: 'https://youtube.com/watch?v=abc123',
+    });
+  });
+
+  it('defaults externalUrl to null for a Cloudflare-only video lesson (regression)', () => {
+    const lesson = new Lesson({
+      id: 'lesson-ext-2',
+      moduleId: 'mod-1',
+      academyId: 'org_A',
+      type: 'video',
+      title: 'Cloudflare Video Lesson',
+      position: 1,
+      content: {
+        type: 'video',
+        cloudflareUid: 'cf-uid-123',
+        durationSeconds: 120,
+        thumbnailUrl: 'https://example.com/thumb.jpg',
+        externalUrl: null,
+      },
+      createdAt: now,
+      updatedAt: now,
+    });
+    expect(lesson.content).toMatchObject({
+      type: 'video',
+      cloudflareUid: 'cf-uid-123',
+      externalUrl: null,
+    });
   });
 
   it('can be instantiated as a text lesson', () => {
