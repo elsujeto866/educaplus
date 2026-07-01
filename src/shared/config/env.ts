@@ -11,6 +11,13 @@ const envSchema = z.object({
   CLERK_SECRET_KEY: z.string().min(1),
   // Value is the Clerk webhook Signing Secret (whsec_...)
   CLERK_WEBHOOK_SECRET: z.string().min(1),
+  // Clerk hosted page + redirect routing (optional — Clerk falls back to its
+  // own defaults when unset; ClerkProvider reads these directly from
+  // process.env, this schema only documents/validates their shape).
+  NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string().optional(),
+  NEXT_PUBLIC_CLERK_SIGN_UP_URL: z.string().optional(),
+  NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL: z.string().optional(),
+  NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL: z.string().optional(),
 
   // Cloudflare Stream (optional until the video-pipeline change wires it)
   CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
