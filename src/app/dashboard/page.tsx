@@ -99,7 +99,7 @@ export default async function DashboardPage() {
   return (
     <AppShell userSlot={<UserMenu />}>
       <div className="mx-auto flex w-full max-w-sm flex-col gap-6">
-        <PageHeader title={academy.name} subtitle={`/${academy.slug}`} />
+        <PageHeader title={academy.name} />
         <Card className="flex flex-col gap-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Tu rol</span>
