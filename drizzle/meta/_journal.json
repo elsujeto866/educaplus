@@ -22,6 +22,13 @@
       "when": 1782868777129,
       "tag": "0002_orange_shiver_man",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782932053058,
+      "tag": "0003_final_quiz_authoring",
+      "breakpoints": true
     }
   ]
 }

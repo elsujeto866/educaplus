@@ -10,12 +10,8 @@
  *   - .enableRLS() emits ENABLE ROW LEVEL SECURITY in the generated migration.
  *   - FORCE ROW LEVEL SECURITY is applied in drizzle/0002_course_rls.sql (manual).
  *
- * Circular FK:
- *   course_modules.assessment_id → assessments(id)   [nullable, set null on delete]
- *   assessments.module_id        → course_modules(id) [not null, cascade on delete]
- * Both references use the lazy (): AnyPgColumn => … form required by Drizzle for
- * forward/circular references. drizzle-kit emits both as ALTER TABLE ADD CONSTRAINT,
- * so table creation order is irrelevant for FK resolution.
+ * assessments is course-scoped (one final quiz per course, unique course_id FK,
+ * cascade delete) — no circular reference with course_modules.
  *
  * Lesson Class-Table-Inheritance (CTI):
  *   base row in `lessons` + ONE companion row in either `lesson_video_assets`
@@ -23,7 +19,6 @@
  */
 
 import { sql } from 'drizzle-orm';
-import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import {
   index,
   integer,
@@ -76,8 +71,6 @@ export const courses = pgTable(
 // ---------------------------------------------------------------------------
 // course_modules
 // ---------------------------------------------------------------------------
-// assessment_id uses a lazy reference ((): AnyPgColumn => assessments.id)
-// because assessments is defined below — circular forward reference.
 
 export const courseModules = pgTable(
   'course_modules',
@@ -94,15 +87,6 @@ export const courseModules = pgTable(
     description: text('description'),
     /** Display order within the course. */
     position: integer('position').notNull().default(0),
-    /**
-     * Optional 1:1 FK to the assessment for this module.
-     * Lazy reference required — assessments is defined after courseModules.
-     * ON DELETE SET NULL so deleting an assessment detaches it from the module.
-     */
-    assessmentId: uuid('assessment_id').references(
-      (): AnyPgColumn => assessments.id,
-      { onDelete: 'set null' },
-    ),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -119,31 +103,33 @@ export const courseModules = pgTable(
 ).enableRLS();
 
 // ---------------------------------------------------------------------------
-// assessments
+// assessments — course-level final quiz (one per course)
 // ---------------------------------------------------------------------------
-// module_id uses a lazy reference — even though courseModules is defined above,
-// the circular pattern requires both sides to be lazy per Drizzle convention.
 
 export const assessments = pgTable(
   'assessments',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     /**
-     * One-to-one FK to the owning module.
-     * UNIQUE enforced at column level → one assessment per module.
-     * Lazy reference — circular with courseModules.assessmentId.
+     * One-to-one FK to the owning course — one final quiz per course.
+     * UNIQUE enforced at column level.
      */
-    moduleId: uuid('module_id')
+    courseId: uuid('course_id')
       .notNull()
       .unique()
-      .references((): AnyPgColumn => courseModules.id, { onDelete: 'cascade' }),
+      .references(() => courses.id, { onDelete: 'cascade' }),
     /** Tenant discriminator — duplicated for RLS policy without a JOIN. */
     academyId: text('academy_id')
       .notNull()
       .references(() => academies.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
-    /** Opaque configuration JSONB — full quiz schema deferred to a later change. */
-    config: jsonb('config'),
+    /**
+     * Typed quiz questions stored as schemaless JSONB — the domain layer
+     * (QuizQuestion discriminated union + QuizQuestionFactory) enforces
+     * type-safety and invariants. Additive future variants ('multi',
+     * 'boolean') require zero schema migration.
+     */
+    questions: jsonb('questions').notNull().default(sql`'[]'::jsonb`),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

@@ -16,7 +16,6 @@ function toEntity(row: typeof courseModules.$inferSelect): CourseModule {
     title: row.title,
     description: row.description,
     position: row.position,
-    assessmentId: row.assessmentId,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   });
@@ -38,7 +37,6 @@ export class DrizzleCourseModuleRepository implements CourseModuleRepository {
         title: module.title,
         description: module.description,
         position: module.position,
-        assessmentId: module.assessmentId,
         createdAt: module.createdAt,
         updatedAt: module.updatedAt,
       }),
@@ -74,7 +72,6 @@ export class DrizzleCourseModuleRepository implements CourseModuleRepository {
           title: module.title,
           description: module.description,
           position: module.position,
-          assessmentId: module.assessmentId,
           updatedAt: module.updatedAt,
         })
         .where(eq(courseModules.id, module.id)),
