@@ -6,12 +6,32 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { TenantContext } from '../../../src/shared/kernel/tenant-context';
 import { UnauthorizedError } from '../../../src/shared/kernel/tenant-context';
 import { UpsertAssessmentUseCase } from '../../../src/modules/course/application/upsert-assessment.use-case';
-import { InvalidQuizQuestionError } from '../../../src/modules/course/domain/errors';
+import { InvalidQuizQuestionError, CourseNotFoundError } from '../../../src/modules/course/domain/errors';
 import type { AssessmentRepository } from '../../../src/modules/course/domain/ports/assessment.repository';
+import type { CourseRepository } from '../../../src/modules/course/domain/ports/course.repository';
+import { Course } from '../../../src/modules/course/domain/course.entity';
 
 const adminCtx: TenantContext = { orgId: 'org_A', userId: 'user_1', role: 'admin' };
 const instructorCtx: TenantContext = { orgId: 'org_A', userId: 'user_2', role: 'instructor' };
 const studentCtx: TenantContext = { orgId: 'org_A', userId: 'user_3', role: 'student' };
+
+const now = new Date('2025-01-01T00:00:00Z');
+
+function makeCourse(overrides: Partial<ConstructorParameters<typeof Course>[0]> = {}): Course {
+  return new Course({
+    id: 'course-1',
+    academyId: 'org_A',
+    slug: 'intro-to-ts',
+    title: 'Intro to TypeScript',
+    description: null,
+    status: 'draft',
+    position: 1,
+    publishedAt: null,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  });
+}
 
 function makeValidQuestionInput(overrides: Record<string, unknown> = {}) {
   return {
@@ -29,6 +49,7 @@ function makeValidQuestionInput(overrides: Record<string, unknown> = {}) {
 
 describe('UpsertAssessmentUseCase', () => {
   let assessmentRepo: AssessmentRepository;
+  let courseRepo: CourseRepository;
   let useCase: UpsertAssessmentUseCase;
 
   beforeEach(() => {
@@ -38,7 +59,18 @@ describe('UpsertAssessmentUseCase', () => {
       findByCourse: vi.fn(),
       delete: vi.fn(),
     };
-    useCase = new UpsertAssessmentUseCase(assessmentRepo);
+    courseRepo = {
+      create: vi.fn(),
+      findById: vi.fn().mockResolvedValue(makeCourse()),
+      findBySlug: vi.fn(),
+      findByAcademy: vi.fn(),
+      findPublishedByAcademy: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      existsBySlug: vi.fn(),
+      maxPositionByAcademy: vi.fn(),
+    };
+    useCase = new UpsertAssessmentUseCase(assessmentRepo, courseRepo);
   });
 
   it('rejects a student (role gate)', async () => {
@@ -64,6 +96,22 @@ describe('UpsertAssessmentUseCase', () => {
         questions: [],
       }),
     ).rejects.toThrow(UnauthorizedError);
+    expect(assessmentRepo.upsert).not.toHaveBeenCalled();
+  });
+
+  it('rejects when courseId does not belong to the caller academy (RLS-scoped lookup returns null for foreign or nonexistent course)', async () => {
+    courseRepo.findById = vi.fn().mockResolvedValue(null);
+
+    await expect(
+      useCase.execute(adminCtx, {
+        id: 'assess-1',
+        courseId: 'course-belongs-to-org-B',
+        academyId: 'org_A',
+        title: 'Squatting Quiz',
+        questions: [],
+      }),
+    ).rejects.toThrow(CourseNotFoundError);
+    expect(courseRepo.findById).toHaveBeenCalledWith(adminCtx, 'course-belongs-to-org-B');
     expect(assessmentRepo.upsert).not.toHaveBeenCalled();
   });
 

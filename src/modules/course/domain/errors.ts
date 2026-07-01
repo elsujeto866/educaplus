@@ -56,3 +56,10 @@ export class InvalidAssessmentError extends Error {
     this.name = 'InvalidAssessmentError';
   }
 }
+
+export class CourseNotFoundError extends Error {
+  constructor(courseId: string) {
+    super(`Course "${courseId}" does not exist or does not belong to the caller's academy`);
+    this.name = 'CourseNotFoundError';
+  }
+}

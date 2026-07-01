@@ -40,12 +40,17 @@ function isPublished(view: CourseDetailView): boolean {
  * Pure derivation of the 5-step authoring wizard from the already-fetched
  * `CourseDetailView` — no domain/application/infra import, no side effects.
  * Delivery `_lib`, mirrors the sibling `course-outline.ts` mapper.
+ *
+ * `hasQuiz` (slice 3b) is the caller-computed `(assessment?.questions.length
+ * ?? 0) >= 1` flag — this function stays a pure derivation with zero
+ * data-fetching of its own.
  */
-export function computeCourseWizard(view: CourseDetailView): CourseWizard {
+export function computeCourseWizard(view: CourseDetailView, hasQuiz: boolean): CourseWizard {
   const modulesDone = hasModules(view);
   const lessonsDone = everyModuleHasLesson(view);
   const published = isPublished(view);
   const detailHref = `/dashboard/courses/${view.course.id}`;
+  const quizHref = `/dashboard/courses/${view.course.id}/quiz`;
 
   const steps: WizardStep[] = [
     {
@@ -69,12 +74,13 @@ export function computeCourseWizard(view: CourseDetailView): CourseWizard {
     {
       id: 'evaluacion-final',
       label: WIZARD_STEP_LABELS['evaluacion-final'],
-      status: 'locked',
+      status: !lessonsDone ? 'upcoming' : hasQuiz ? 'completed' : 'current',
+      href: quizHref,
     },
     {
       id: 'publicar',
       label: WIZARD_STEP_LABELS.publicar,
-      status: published ? 'completed' : lessonsDone ? 'current' : 'upcoming',
+      status: published ? 'completed' : lessonsDone && hasQuiz ? 'current' : 'upcoming',
       href: detailHref,
     },
   ];

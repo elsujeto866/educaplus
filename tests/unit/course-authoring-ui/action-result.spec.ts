@@ -69,6 +69,34 @@ describe('toActionError', () => {
     });
   });
 
+  it('maps a domain InvalidQuizQuestionError (matched by name) to a Spanish message', () => {
+    expect(toActionError(namedError('InvalidQuizQuestionError'))).toEqual({
+      ok: false,
+      error: 'La pregunta del cuestionario no es válida.',
+    });
+  });
+
+  it('maps a domain InvalidAssessmentError (matched by name) to a Spanish message', () => {
+    expect(toActionError(namedError('InvalidAssessmentError'))).toEqual({
+      ok: false,
+      error: 'No se pudo guardar la evaluación.',
+    });
+  });
+
+  it('maps a domain CourseNotFoundError (matched by name) to a Spanish message', () => {
+    expect(toActionError(namedError('CourseNotFoundError'))).toEqual({
+      ok: false,
+      error: 'El curso no existe o no tenés acceso a él.',
+    });
+  });
+
+  it('maps a delivery InvalidQuizPayloadError (matched by name) to a Spanish message', () => {
+    expect(toActionError(namedError('InvalidQuizPayloadError'))).toEqual({
+      ok: false,
+      error: 'El cuestionario tiene un formato inválido.',
+    });
+  });
+
   it('falls back to a generic Spanish message for unrecognized errors', () => {
     expect(toActionError(namedError('SomeUnknownError'))).toEqual({
       ok: false,

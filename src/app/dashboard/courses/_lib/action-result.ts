@@ -24,6 +24,13 @@ const DOMAIN_ERROR_MESSAGES: Record<string, string> = {
   CourseNotPublishedError: 'El curso debe estar publicado para esta acción.',
   DuplicateEnrollmentError: 'Ya estás inscripto en este curso.',
   DuplicateAssessmentError: 'Este módulo ya tiene una evaluación.',
+  CourseNotFoundError: 'El curso no existe o no tenés acceso a él.',
+  InvalidQuizQuestionError: 'La pregunta del cuestionario no es válida.',
+  InvalidAssessmentError: 'No se pudo guardar la evaluación.',
+  // Not a domain error (thrown by quiz/_lib/quiz-form.ts's parseQuizPayload)
+  // but name-matched here too so saveQuizAction's single try/catch can map
+  // it via the same toActionError() call, per design.md's canonical flow.
+  InvalidQuizPayloadError: 'El cuestionario tiene un formato inválido.',
 };
 
 /** Extracts the first Zod issue message, falling back to a generic one. */

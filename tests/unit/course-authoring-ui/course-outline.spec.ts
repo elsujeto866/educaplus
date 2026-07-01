@@ -53,12 +53,15 @@ describe('toCourseOutline', () => {
     );
   });
 
-  it('appends a locked final-quiz node with no href and kind "quiz"', () => {
+  it('appends a final-quiz node linking to the quiz builder route', () => {
     const outline = toCourseOutline(makeView());
     const quiz = outline.extraNodes?.find((node) => node.id === 'final-quiz');
 
-    expect(quiz).toMatchObject({ label: WIZARD_STEP_LABELS['evaluacion-final'], kind: 'quiz' });
-    expect(quiz?.href).toBeUndefined();
+    expect(quiz).toMatchObject({
+      label: WIZARD_STEP_LABELS['evaluacion-final'],
+      kind: 'quiz',
+      href: '/dashboard/courses/course-1/quiz',
+    });
   });
 
   it('appends a publish node with an href to the course detail page and kind "publish"', () => {

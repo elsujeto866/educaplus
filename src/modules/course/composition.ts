@@ -30,6 +30,8 @@ import { EnrollLearnerUseCase } from './application/enroll-learner.use-case';
 import { MarkLessonCompleteUseCase } from './application/mark-lesson-complete.use-case';
 import { GetCourseProgressUseCase } from './application/get-course-progress.use-case';
 import { UpsertAssessmentUseCase } from './application/upsert-assessment.use-case';
+import { GetAssessmentUseCase } from './application/get-assessment.use-case';
+export type { AssessmentView } from './application/get-assessment.use-case';
 
 export interface CourseComposition {
   createCourse: CreateCourseUseCase;
@@ -54,6 +56,7 @@ export interface CourseComposition {
   markLessonComplete: MarkLessonCompleteUseCase;
   getCourseProgress: GetCourseProgressUseCase;
   upsertAssessment: UpsertAssessmentUseCase;
+  getAssessment: GetAssessmentUseCase;
 }
 
 /**
@@ -108,6 +111,7 @@ export function makeCourseComposition(): CourseComposition {
       progressQuery,
     ),
     getCourseProgress: new GetCourseProgressUseCase(progressQuery),
-    upsertAssessment: new UpsertAssessmentUseCase(assessmentRepo),
+    upsertAssessment: new UpsertAssessmentUseCase(assessmentRepo, courseRepo),
+    getAssessment: new GetAssessmentUseCase(assessmentRepo),
   };
 }

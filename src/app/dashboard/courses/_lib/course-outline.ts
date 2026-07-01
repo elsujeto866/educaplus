@@ -7,7 +7,8 @@ import { WIZARD_STEP_LABELS } from '../[courseId]/_lib/course-wizard';
  * `CourseOutline` for `CourseOutlineNav`. No new data-fetching: reuses the
  * view-model `CourseDetailPage` already read via `getCourseDetail`.
  * Lessons link to the existing lesson-editor route, and two `extraNodes`
- * mirror the guided wizard's remaining steps (locked final-quiz, publish).
+ * mirror the guided wizard's remaining steps: final-quiz (now navigable to
+ * the quiz builder route, slice 3b) and publish.
  */
 export function toCourseOutline(view: CourseDetailView): CourseOutline {
   const courseHref = `/dashboard/courses/${view.course.id}`;
@@ -27,7 +28,12 @@ export function toCourseOutline(view: CourseDetailView): CourseOutline {
       })),
     })),
     extraNodes: [
-      { id: 'final-quiz', label: WIZARD_STEP_LABELS['evaluacion-final'], kind: 'quiz' },
+      {
+        id: 'final-quiz',
+        label: WIZARD_STEP_LABELS['evaluacion-final'],
+        kind: 'quiz',
+        href: `${courseHref}/quiz`,
+      },
       { id: 'publish', label: WIZARD_STEP_LABELS.publicar, kind: 'publish', href: courseHref },
     ],
   };

@@ -32,10 +32,13 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
   const ctx = await getTenantContext();
   requireInstructor(ctx);
 
-  const detail = await makeCourseComposition().getCourseDetail.execute(ctx, courseId);
+  const composition = makeCourseComposition();
+  const detail = await composition.getCourseDetail.execute(ctx, courseId);
   if (!detail) notFound();
 
-  const wizard = computeCourseWizard(detail);
+  const assessment = await composition.getAssessment.execute(ctx, courseId);
+  const hasQuiz = (assessment?.questions.length ?? 0) >= 1;
+  const wizard = computeCourseWizard(detail, hasQuiz);
 
   return (
     <AppShell
