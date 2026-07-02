@@ -136,4 +136,17 @@ describe('QuizRunner', () => {
     }
     expect(screen.getByRole('button', { name: /enviar respuestas/i })).toBeDisabled();
   });
+
+  it('shows a "Ver certificado" link to this course\'s certificate route when passed', async () => {
+    const { QuizRunner } = await import(
+      '../../../src/app/dashboard/learn/courses/[courseId]/quiz/_components/quiz-runner'
+    );
+
+    render(
+      <QuizRunner courseId="course-1" quiz={quiz} latest={{ score: 90, passed: true }} />,
+    );
+
+    const link = screen.getByRole('link', { name: /ver certificado/i });
+    expect(link).toHaveAttribute('href', '/dashboard/learn/courses/course-1/certificate');
+  });
 });

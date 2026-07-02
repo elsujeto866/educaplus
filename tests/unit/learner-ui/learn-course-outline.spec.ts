@@ -62,4 +62,24 @@ describe('toCourseOutline (learn)', () => {
     const outline = toCourseOutline(makeView());
     expect(outline.extraNodes ?? []).toHaveLength(0);
   });
+
+  it('appends a certificate node linking to the certificate route when hasPassed is true', () => {
+    const outline = toCourseOutline(makeView(), { questionCount: 3, hasPassed: true });
+    const cert = outline.extraNodes?.find((node) => node.id === 'certificate');
+
+    expect(cert).toMatchObject({
+      kind: 'certificate',
+      href: '/dashboard/learn/courses/course-1/certificate',
+    });
+  });
+
+  it('omits the certificate node when hasPassed is false', () => {
+    const outline = toCourseOutline(makeView(), { questionCount: 3, hasPassed: false });
+    expect(outline.extraNodes?.find((node) => node.id === 'certificate')).toBeUndefined();
+  });
+
+  it('omits the certificate node when hasPassed is not provided', () => {
+    const outline = toCourseOutline(makeView(), { questionCount: 3 });
+    expect(outline.extraNodes?.find((node) => node.id === 'certificate')).toBeUndefined();
+  });
 });

@@ -58,6 +58,7 @@ export function QuizRunner({ courseId, quiz, latest }: QuizRunnerProps) {
           setAnswers({});
           setRetake(true);
         }}
+        certificateHref={`/dashboard/learn/courses/${courseId}/certificate`}
       />
     );
   }

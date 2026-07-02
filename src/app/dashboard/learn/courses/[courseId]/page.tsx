@@ -35,6 +35,7 @@ export default async function CourseViewerPage({ params }: CourseViewerPageProps
   if (!view) notFound();
 
   const assessment = await composition.getAssessment.execute(ctx, courseId);
+  const latestPassed = await composition.getLatestPassed.execute(ctx, courseId);
   const { course, modules, progressPercent, isEnrolled } = view;
 
   return (
@@ -50,7 +51,10 @@ export default async function CourseViewerPage({ params }: CourseViewerPageProps
       userSlot={<UserMenu />}
       sidebar={
         <CourseOutlineNav
-          outline={toCourseOutline(view, { questionCount: assessment?.questions.length ?? 0 })}
+          outline={toCourseOutline(view, {
+            questionCount: assessment?.questions.length ?? 0,
+            hasPassed: latestPassed !== null,
+          })}
         />
       }
     >

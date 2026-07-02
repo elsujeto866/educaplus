@@ -51,7 +51,11 @@ export default async function QuizPage({ params }: QuizPageProps) {
         </Link>
       }
       userSlot={<UserMenu />}
-      sidebar={<CourseOutlineNav outline={toCourseOutline(view, { questionCount })} />}
+      sidebar={
+        <CourseOutlineNav
+          outline={toCourseOutline(view, { questionCount, hasPassed: latestPassed !== null })}
+        />
+      }
     >
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <PageHeader

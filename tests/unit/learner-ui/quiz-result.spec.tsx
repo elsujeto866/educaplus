@@ -32,4 +32,37 @@ describe('QuizResult', () => {
 
     expect(onRetake).toHaveBeenCalledOnce();
   });
+
+  it('shows a "Ver certificado" link when passed and certificateHref is provided', () => {
+    render(
+      <QuizResult
+        score={90}
+        passed
+        onRetake={() => {}}
+        certificateHref="/dashboard/learn/courses/course-1/certificate"
+      />,
+    );
+
+    const link = screen.getByRole('link', { name: /ver certificado/i });
+    expect(link).toHaveAttribute('href', '/dashboard/learn/courses/course-1/certificate');
+  });
+
+  it('hides the "Ver certificado" link when not passed, even with certificateHref provided', () => {
+    render(
+      <QuizResult
+        score={40}
+        passed={false}
+        onRetake={() => {}}
+        certificateHref="/dashboard/learn/courses/course-1/certificate"
+      />,
+    );
+
+    expect(screen.queryByRole('link', { name: /ver certificado/i })).not.toBeInTheDocument();
+  });
+
+  it('hides the "Ver certificado" link when passed but certificateHref is not provided', () => {
+    render(<QuizResult score={90} passed onRetake={() => {}} />);
+
+    expect(screen.queryByRole('link', { name: /ver certificado/i })).not.toBeInTheDocument();
+  });
 });
