@@ -36,6 +36,13 @@
       "when": 1782949901707,
       "tag": "0004_assessment_passing_score",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782951274866,
+      "tag": "0005_assessment_attempts",
+      "breakpoints": true
     }
   ]
 }

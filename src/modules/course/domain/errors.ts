@@ -63,3 +63,24 @@ export class CourseNotFoundError extends Error {
     this.name = 'CourseNotFoundError';
   }
 }
+
+export class LearnerNotEnrolledError extends Error {
+  constructor(courseId: string, clerkUserId: string) {
+    super(`User "${clerkUserId}" is not enrolled in course "${courseId}" — cannot submit an attempt`);
+    this.name = 'LearnerNotEnrolledError';
+  }
+}
+
+export class EmptyQuizError extends Error {
+  constructor(assessmentId: string) {
+    super(`Assessment "${assessmentId}" has zero questions — cannot be scored`);
+    this.name = 'EmptyQuizError';
+  }
+}
+
+export class InvalidAttemptError extends Error {
+  constructor(reason: string) {
+    super(`Invalid attempt: ${reason}`);
+    this.name = 'InvalidAttemptError';
+  }
+}

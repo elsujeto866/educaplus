@@ -20,6 +20,7 @@
 
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   index,
   integer,
   jsonb,
@@ -136,6 +137,46 @@ export const assessments = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    pgPolicy('tenant_isolation', {
+      for: 'all',
+      to: 'app_user',
+      using: sql`${t.academyId} = current_setting('app.current_tenant_id', true)`,
+      withCheck: sql`${t.academyId} = current_setting('app.current_tenant_id', true)`,
+    }),
+  ],
+).enableRLS();
+
+// ---------------------------------------------------------------------------
+// assessment_attempts — one historical row per learner submission (retakes
+// allowed — NO unique constraint on (assessmentId, clerkUserId)).
+// ---------------------------------------------------------------------------
+
+export const assessmentAttempts = pgTable(
+  'assessment_attempts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    assessmentId: uuid('assessment_id')
+      .notNull()
+      .references(() => assessments.id, { onDelete: 'cascade' }),
+    /** Tenant discriminator — duplicated for RLS policy without a JOIN. */
+    academyId: text('academy_id')
+      .notNull()
+      .references(() => academies.id, { onDelete: 'cascade' }),
+    /** Opaque Clerk user identifier (not a FK — Clerk is external). */
+    clerkUserId: text('clerk_user_id').notNull(),
+    /** Full snapshot of the submission: [{questionId, selectedOptionId}]. */
+    answers: jsonb('answers').notNull(),
+    /** Percentage score (0-100, integer) computed by quiz-scoring.service. */
+    score: integer('score').notNull(),
+    passed: boolean('passed').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('assessment_attempts_academy_assessment_user_idx').on(
+      t.academyId,
+      t.assessmentId,
+      t.clerkUserId,
+    ),
     pgPolicy('tenant_isolation', {
       for: 'all',
       to: 'app_user',

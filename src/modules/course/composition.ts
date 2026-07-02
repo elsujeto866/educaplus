@@ -5,6 +5,7 @@ import { DrizzleLessonProgressRepository } from './infrastructure/drizzle-lesson
 import { DrizzleResourceRepository } from './infrastructure/drizzle-resource.repository';
 import { DrizzleEnrollmentRepository } from './infrastructure/drizzle-enrollment.repository';
 import { DrizzleAssessmentRepository } from './infrastructure/drizzle-assessment.repository';
+import { DrizzleAssessmentAttemptRepository } from './infrastructure/drizzle-assessment-attempt.repository';
 import { DrizzleProgressQuery } from './infrastructure/drizzle-progress-query';
 import { CreateCourseUseCase } from './application/create-course.use-case';
 import { ListCoursesUseCase } from './application/list-courses.use-case';
@@ -32,6 +33,8 @@ import { GetCourseProgressUseCase } from './application/get-course-progress.use-
 import { UpsertAssessmentUseCase } from './application/upsert-assessment.use-case';
 import { GetAssessmentUseCase } from './application/get-assessment.use-case';
 export type { AssessmentView } from './application/get-assessment.use-case';
+import { SubmitAttemptUseCase } from './application/submit-attempt.use-case';
+import { GetAttemptsUseCase, GetLatestPassedUseCase } from './application/get-attempts.use-case';
 
 export interface CourseComposition {
   createCourse: CreateCourseUseCase;
@@ -57,6 +60,9 @@ export interface CourseComposition {
   getCourseProgress: GetCourseProgressUseCase;
   upsertAssessment: UpsertAssessmentUseCase;
   getAssessment: GetAssessmentUseCase;
+  submitAttempt: SubmitAttemptUseCase;
+  getAttempts: GetAttemptsUseCase;
+  getLatestPassed: GetLatestPassedUseCase;
 }
 
 /**
@@ -76,6 +82,7 @@ export function makeCourseComposition(): CourseComposition {
   const resourceRepo = new DrizzleResourceRepository();
   const enrollmentRepo = new DrizzleEnrollmentRepository();
   const assessmentRepo = new DrizzleAssessmentRepository();
+  const attemptRepo = new DrizzleAssessmentAttemptRepository();
   const progressQuery = new DrizzleProgressQuery();
 
   return {
@@ -113,5 +120,8 @@ export function makeCourseComposition(): CourseComposition {
     getCourseProgress: new GetCourseProgressUseCase(progressQuery),
     upsertAssessment: new UpsertAssessmentUseCase(assessmentRepo, courseRepo),
     getAssessment: new GetAssessmentUseCase(assessmentRepo),
+    submitAttempt: new SubmitAttemptUseCase(assessmentRepo, enrollmentRepo, attemptRepo),
+    getAttempts: new GetAttemptsUseCase(assessmentRepo, attemptRepo),
+    getLatestPassed: new GetLatestPassedUseCase(assessmentRepo, attemptRepo),
   };
 }

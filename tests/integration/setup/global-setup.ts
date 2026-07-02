@@ -79,11 +79,13 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
 
   try {
     // 1. Clean slate — child-first drop order to respect FK constraints.
-    //    Course tables (9 new) must be dropped before academy tables.
+    //    Course tables (10 new) must be dropped before academy tables.
+    //    assessment_attempts references assessments — must drop first.
     await sql.unsafe('DROP TABLE IF EXISTS lesson_progress CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS lesson_video_assets CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS lesson_text_contents CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS resources CASCADE');
+    await sql.unsafe('DROP TABLE IF EXISTS assessment_attempts CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS assessments CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS enrollments CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS lessons CASCADE');
@@ -179,6 +181,23 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       .filter(Boolean);
 
     for (const stmt of stmts0004) {
+      await sql.unsafe(stmt);
+    }
+
+    // 6e. Apply 0005_assessment_attempts.sql — creates assessment_attempts
+    //     (fresh CREATE TABLE + ENABLE RLS + policy) plus the LOAD-BEARING
+    //     manual GRANT + FORCE ROW LEVEL SECURITY tail (drizzle-kit never
+    //     emits FORCE/GRANT — this is a NEW forced table, not a re-assert).
+    const raw0005 = readFileSync(
+      join(DRIZZLE_DIR, '0005_assessment_attempts.sql'),
+      'utf-8',
+    );
+    const stmts0005 = raw0005
+      .split('--> statement-breakpoint')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    for (const stmt of stmts0005) {
       await sql.unsafe(stmt);
     }
 
@@ -327,6 +346,20 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     await sql`
       INSERT INTO assessments (id, course_id, academy_id, title, passing_score, questions)
       VALUES ('b0000000-0000-0000-0000-000000000008', 'b0000000-0000-0000-0000-000000000001', 'org_B', 'Assessment B1', 80, '[]')
+      ON CONFLICT (id) DO NOTHING
+    `;
+
+    // assessment_attempts — one passed attempt per org, keyed to the
+    // assessment seeded above (a...008 / b...008). Empty answers snapshot
+    // is fine here — these rows exist purely for RLS isolation assertions.
+    await sql`
+      INSERT INTO assessment_attempts (id, assessment_id, academy_id, clerk_user_id, answers, score, passed)
+      VALUES ('a0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000008', 'org_A', 'user_A1', '[]', 100, true)
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO assessment_attempts (id, assessment_id, academy_id, clerk_user_id, answers, score, passed)
+      VALUES ('b0000000-0000-0000-0000-000000000009', 'b0000000-0000-0000-0000-000000000008', 'org_B', 'user_B1', '[]', 100, true)
       ON CONFLICT (id) DO NOTHING
     `;
   } finally {
