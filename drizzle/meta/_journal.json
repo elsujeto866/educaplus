@@ -43,6 +43,13 @@
       "when": 1782951274866,
       "tag": "0005_assessment_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782958543955,
+      "tag": "0006_certificates",
+      "breakpoints": true
     }
   ]
 }

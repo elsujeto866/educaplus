@@ -84,3 +84,10 @@ export class InvalidAttemptError extends Error {
     this.name = 'InvalidAttemptError';
   }
 }
+
+export class CertificateNotEarnedError extends Error {
+  constructor(courseId: string, clerkUserId: string) {
+    super(`User "${clerkUserId}" has not passed course "${courseId}" — no certificate can be issued`);
+    this.name = 'CertificateNotEarnedError';
+  }
+}

@@ -31,11 +31,16 @@
  *      assessments.passing_score integer NOT NULL DEFAULT 70, plus a
  *      defensive ALTER TABLE … FORCE ROW LEVEL SECURITY tail — verified by
  *      the RLS suite).
+ *   6f. Apply drizzle migration 0006_certificates.sql (creates certificates
+ *      table plus the LOAD-BEARING manual GRANT + FORCE ROW LEVEL SECURITY
+ *      tail — verified by the RLS suite).
  *   10. Seed academies org_A / org_B and one membership each (superuser bypasses
  *      RLS here — FORCE RLS applies to the owner but NOT to superusers, so seeds
  *      flow through without tenant context).
  *   11. Seed minimal course/module/lesson/enrollment/progress rows for both orgs
  *      so cross-tenant RLS assertions have rows on both sides to compare against.
+ *   12. Seed one certificate per org so certificate-isolation.spec.ts has rows
+ *      on both sides to compare against.
  *
  * Returns a teardown function (no-op — the container is torn down externally).
  */
@@ -81,6 +86,9 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     // 1. Clean slate — child-first drop order to respect FK constraints.
     //    Course tables (10 new) must be dropped before academy tables.
     //    assessment_attempts references assessments — must drop first.
+    //    certificates references courses + academies (no children) — drop
+    //    first so it never blocks a later CASCADE from courses/academies.
+    await sql.unsafe('DROP TABLE IF EXISTS certificates CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS lesson_progress CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS lesson_video_assets CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS lesson_text_contents CASCADE');
@@ -198,6 +206,20 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       .filter(Boolean);
 
     for (const stmt of stmts0005) {
+      await sql.unsafe(stmt);
+    }
+
+    // 6f. Apply 0006_certificates.sql — creates certificates (fresh CREATE
+    //     TABLE + ENABLE RLS + policy) plus the LOAD-BEARING manual GRANT +
+    //     FORCE ROW LEVEL SECURITY tail (drizzle-kit never emits FORCE/GRANT
+    //     — this is a NEW forced table, not a re-assert).
+    const raw0006 = readFileSync(join(DRIZZLE_DIR, '0006_certificates.sql'), 'utf-8');
+    const stmts0006 = raw0006
+      .split('--> statement-breakpoint')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    for (const stmt of stmts0006) {
       await sql.unsafe(stmt);
     }
 
@@ -360,6 +382,20 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     await sql`
       INSERT INTO assessment_attempts (id, assessment_id, academy_id, clerk_user_id, answers, score, passed)
       VALUES ('b0000000-0000-0000-0000-000000000009', 'b0000000-0000-0000-0000-000000000008', 'org_B', 'user_B1', '[]', 100, true)
+      ON CONFLICT (id) DO NOTHING
+    `;
+
+    // certificates — one issued certificate per org, keyed to the course
+    // seeded above (a...001 / b...001). Rows exist purely for RLS isolation
+    // assertions.
+    await sql`
+      INSERT INTO certificates (id, course_id, academy_id, clerk_user_id, certificate_code, score, student_name, course_title, academy_name)
+      VALUES ('a0000000-0000-0000-0000-00000000000a', 'a0000000-0000-0000-0000-000000000001', 'org_A', 'user_A1', 'CERT-2026-AAAAAAAA', 100, 'Student A1', 'Course A1', 'Academy A')
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO certificates (id, course_id, academy_id, clerk_user_id, certificate_code, score, student_name, course_title, academy_name)
+      VALUES ('b0000000-0000-0000-0000-00000000000a', 'b0000000-0000-0000-0000-000000000001', 'org_B', 'user_B1', 'CERT-2026-BBBBBBBB', 100, 'Student B1', 'Course B1', 'Academy B')
       ON CONFLICT (id) DO NOTHING
     `;
   } finally {

@@ -6,6 +6,7 @@ import { DrizzleResourceRepository } from './infrastructure/drizzle-resource.rep
 import { DrizzleEnrollmentRepository } from './infrastructure/drizzle-enrollment.repository';
 import { DrizzleAssessmentRepository } from './infrastructure/drizzle-assessment.repository';
 import { DrizzleAssessmentAttemptRepository } from './infrastructure/drizzle-assessment-attempt.repository';
+import { DrizzleCertificateRepository } from './infrastructure/drizzle-certificate.repository';
 import { DrizzleProgressQuery } from './infrastructure/drizzle-progress-query';
 import { CreateCourseUseCase } from './application/create-course.use-case';
 import { ListCoursesUseCase } from './application/list-courses.use-case';
@@ -35,6 +36,8 @@ import { GetAssessmentUseCase } from './application/get-assessment.use-case';
 export type { AssessmentView } from './application/get-assessment.use-case';
 import { SubmitAttemptUseCase } from './application/submit-attempt.use-case';
 import { GetAttemptsUseCase, GetLatestPassedUseCase } from './application/get-attempts.use-case';
+import { IssueCertificateUseCase } from './application/issue-certificate.use-case';
+import { GetCertificateUseCase } from './application/get-certificate.use-case';
 
 export interface CourseComposition {
   createCourse: CreateCourseUseCase;
@@ -63,6 +66,8 @@ export interface CourseComposition {
   submitAttempt: SubmitAttemptUseCase;
   getAttempts: GetAttemptsUseCase;
   getLatestPassed: GetLatestPassedUseCase;
+  issueCertificate: IssueCertificateUseCase;
+  getCertificate: GetCertificateUseCase;
 }
 
 /**
@@ -83,7 +88,10 @@ export function makeCourseComposition(): CourseComposition {
   const enrollmentRepo = new DrizzleEnrollmentRepository();
   const assessmentRepo = new DrizzleAssessmentRepository();
   const attemptRepo = new DrizzleAssessmentAttemptRepository();
+  const certificateRepo = new DrizzleCertificateRepository();
   const progressQuery = new DrizzleProgressQuery();
+
+  const getLatestPassed = new GetLatestPassedUseCase(assessmentRepo, attemptRepo);
 
   return {
     createCourse: new CreateCourseUseCase(courseRepo),
@@ -122,6 +130,8 @@ export function makeCourseComposition(): CourseComposition {
     getAssessment: new GetAssessmentUseCase(assessmentRepo),
     submitAttempt: new SubmitAttemptUseCase(assessmentRepo, enrollmentRepo, attemptRepo),
     getAttempts: new GetAttemptsUseCase(assessmentRepo, attemptRepo),
-    getLatestPassed: new GetLatestPassedUseCase(assessmentRepo, attemptRepo),
+    getLatestPassed,
+    issueCertificate: new IssueCertificateUseCase(assessmentRepo, attemptRepo, certificateRepo),
+    getCertificate: new GetCertificateUseCase(certificateRepo),
   };
 }

@@ -52,3 +52,6 @@ playwright-report/
 # build artifacts in public
 public/sw.js
 public/workbox-*.js
+
+# Scratchpad for AI/agent working files
+.scratch/

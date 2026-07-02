@@ -187,6 +187,50 @@ export const assessmentAttempts = pgTable(
 ).enableRLS();
 
 // ---------------------------------------------------------------------------
+// certificates — one immutable proof-of-completion row per (course, user).
+// Issued lazily by IssueCertificateUseCase once the user has a passing
+// attempt; never updated after creation (first-pass wins).
+// ---------------------------------------------------------------------------
+
+export const certificates = pgTable(
+  'certificates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    courseId: uuid('course_id')
+      .notNull()
+      .references(() => courses.id, { onDelete: 'cascade' }),
+    /** Tenant discriminator — duplicated for RLS policy without a JOIN. */
+    academyId: text('academy_id')
+      .notNull()
+      .references(() => academies.id, { onDelete: 'cascade' }),
+    /** Opaque Clerk user identifier (not a FK — Clerk is external). */
+    clerkUserId: text('clerk_user_id').notNull(),
+    /** Deterministic, human-readable code — see certificate-code.service.ts. */
+    certificateCode: text('certificate_code').notNull(),
+    /** Percentage score (0-100, integer) snapshotted from the passing attempt. */
+    score: integer('score').notNull(),
+    /** Snapshot of the learner's display name at issuance time. */
+    studentName: text('student_name').notNull(),
+    /** Snapshot of the course title at issuance time. */
+    courseTitle: text('course_title').notNull(),
+    /** Snapshot of the academy name at issuance time. */
+    academyName: text('academy_name').notNull(),
+    issuedAt: timestamp('issued_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique().on(t.courseId, t.clerkUserId),
+    unique().on(t.academyId, t.certificateCode),
+    index('certificates_academy_course_user_idx').on(t.academyId, t.courseId, t.clerkUserId),
+    pgPolicy('tenant_isolation', {
+      for: 'all',
+      to: 'app_user',
+      using: sql`${t.academyId} = current_setting('app.current_tenant_id', true)`,
+      withCheck: sql`${t.academyId} = current_setting('app.current_tenant_id', true)`,
+    }),
+  ],
+).enableRLS();
+
+// ---------------------------------------------------------------------------
 // lessons  (CTI base row)
 // ---------------------------------------------------------------------------
 
