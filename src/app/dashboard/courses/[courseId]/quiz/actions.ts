@@ -20,6 +20,12 @@ const saveQuizSchema = z.object({
     .trim()
     .min(3, 'El título debe tener al menos 3 caracteres.')
     .max(200, 'El título es demasiado largo.'),
+  passingScore: z.coerce
+    .number()
+    .int('El puntaje debe ser un entero entre 0 y 100.')
+    .min(0, 'El puntaje debe ser un entero entre 0 y 100.')
+    .max(100, 'El puntaje debe ser un entero entre 0 y 100.')
+    .default(70),
   payload: z.string(),
 });
 
@@ -30,6 +36,7 @@ export async function saveQuizAction(
 ): Promise<ActionResult> {
   const parsed = saveQuizSchema.safeParse({
     title: (formData.get('title') ?? '').toString(),
+    passingScore: (formData.get('passingScore') ?? '').toString(),
     payload: (formData.get('payload') ?? '').toString(),
   });
 
@@ -46,6 +53,7 @@ export async function saveQuizAction(
       courseId,
       academyId: ctx.orgId,
       title: parsed.data.title,
+      passingScore: parsed.data.passingScore,
       questions,
     });
   } catch (error) {

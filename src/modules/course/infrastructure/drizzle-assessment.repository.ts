@@ -20,6 +20,7 @@ function toEntity(row: typeof assessments.$inferSelect): Assessment {
     courseId: row.courseId,
     academyId: row.academyId,
     title: row.title,
+    passingScore: row.passingScore,
     questions: row.questions as unknown as QuizQuestion[],
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -45,6 +46,7 @@ export class DrizzleAssessmentRepository implements AssessmentRepository {
           courseId: assessment.courseId,
           academyId: assessment.academyId,
           title: assessment.title,
+          passingScore: assessment.passingScore,
           questions: assessment.questions as unknown as Record<string, unknown>[],
           createdAt: assessment.createdAt,
           updatedAt: assessment.updatedAt,
@@ -53,6 +55,7 @@ export class DrizzleAssessmentRepository implements AssessmentRepository {
           target: assessments.courseId,
           set: {
             title: assessment.title,
+            passingScore: assessment.passingScore,
             questions: assessment.questions as unknown as Record<string, unknown>[],
             updatedAt: assessment.updatedAt,
           },

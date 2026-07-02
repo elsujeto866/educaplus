@@ -29,6 +29,13 @@
       "when": 1782932053058,
       "tag": "0003_final_quiz_authoring",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782949901707,
+      "tag": "0004_assessment_passing_score",
+      "breakpoints": true
     }
   ]
 }

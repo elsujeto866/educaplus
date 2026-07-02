@@ -7,6 +7,12 @@ export interface AssessmentProps {
   academyId: string;
   title: string;
   /**
+   * Minimum percentage score (0-100, integer) required to pass this quiz.
+   * Authored alongside `title`; enforcement of pass/fail happens at
+   * take-time (a later slice) — this is the threshold value only.
+   */
+  passingScore: number;
+  /**
    * Typed quiz questions — each element is already validated by
    * QuizQuestionFactory.create() before the entity is constructed.
    * An empty array is a VALID draft state (no "≥1 question" rule at this
@@ -31,6 +37,7 @@ export class Assessment {
   readonly courseId: string;
   readonly academyId: string;
   readonly title: string;
+  readonly passingScore: number;
   readonly questions: QuizQuestion[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -40,6 +47,13 @@ export class Assessment {
     if (!props.courseId) throw new Error('Assessment: courseId is required');
     if (!props.academyId) throw new Error('Assessment: academyId is required');
     if (!props.title) throw new Error('Assessment: title is required');
+    if (
+      !Number.isInteger(props.passingScore) ||
+      props.passingScore < 0 ||
+      props.passingScore > 100
+    ) {
+      throw new InvalidAssessmentError('passingScore must be an integer between 0 and 100');
+    }
 
     const questionIds = props.questions.map((q) => q.id);
     if (new Set(questionIds).size !== questionIds.length) {
@@ -50,6 +64,7 @@ export class Assessment {
     this.courseId = props.courseId;
     this.academyId = props.academyId;
     this.title = props.title;
+    this.passingScore = props.passingScore;
     this.questions = props.questions;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;

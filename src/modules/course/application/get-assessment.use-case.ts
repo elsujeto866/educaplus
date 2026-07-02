@@ -6,6 +6,7 @@ export interface AssessmentView {
   id: string;
   courseId: string;
   title: string;
+  passingScore: number;
   questions: QuizQuestion[];
 }
 
@@ -28,6 +29,7 @@ export class GetAssessmentUseCase {
       id: assessment.id,
       courseId: assessment.courseId,
       title: assessment.title,
+      passingScore: assessment.passingScore,
       questions: assessment.questions,
     };
   }

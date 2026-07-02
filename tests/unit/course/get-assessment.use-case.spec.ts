@@ -34,6 +34,7 @@ describe('GetAssessmentUseCase', () => {
       courseId: 'course-1',
       academyId: 'org_A',
       title: 'Quiz final',
+      passingScore: 80,
       questions: [
         QuizQuestionFactory.create({
           type: 'single',
@@ -58,6 +59,7 @@ describe('GetAssessmentUseCase', () => {
       id: 'assess-1',
       courseId: 'course-1',
       title: 'Quiz final',
+      passingScore: 80,
       questions: assessment.questions,
     });
     expect(assessmentRepo.findByCourse).toHaveBeenCalledWith(instructorCtx, 'course-1');

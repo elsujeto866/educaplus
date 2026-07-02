@@ -6,6 +6,7 @@ import type { ActionResult } from '../../../_lib/action-result';
 import {
   quizReducer,
   validateQuizDraft,
+  validatePassingScore,
   serializeQuizPayload,
   type QuizQuestionDraft,
 } from '../_lib/quiz-form';
@@ -20,6 +21,7 @@ const initialState: ActionResult = { ok: true };
 interface QuizBuilderFormProps {
   courseId: string;
   initialTitle: string;
+  initialPassingScore: number;
   initialQuestions: QuizQuestionDraft[];
 }
 
@@ -32,15 +34,22 @@ interface QuizBuilderFormProps {
  * The hidden `payload` field carries the serialized draft to
  * `saveQuizAction`, which re-derives truth via `QuizQuestionFactory`.
  */
-export function QuizBuilderForm({ courseId, initialTitle, initialQuestions }: QuizBuilderFormProps) {
+export function QuizBuilderForm({
+  courseId,
+  initialTitle,
+  initialPassingScore,
+  initialQuestions,
+}: QuizBuilderFormProps) {
   const boundAction = saveQuizAction.bind(null, courseId);
   const [state, formAction, isPending] = useActionState(boundAction, initialState);
   const [title, setTitle] = useState(initialTitle);
+  const [passingScore, setPassingScore] = useState(initialPassingScore);
   const [questions, dispatch] = useReducer(quizReducer, initialQuestions);
 
   const errors = validateQuizDraft(questions);
   const errorFor = (questionId: string) => errors.find((e) => e.questionId === questionId)?.message;
-  const canSubmit = errors.length === 0;
+  const passingScoreError = validatePassingScore(passingScore);
+  const canSubmit = errors.length === 0 && !passingScoreError;
   const actionError = state.ok ? undefined : state.error;
 
   return (
@@ -55,6 +64,25 @@ export function QuizBuilderForm({ courseId, initialTitle, initialQuestions }: Qu
             required
             minLength={3}
             maxLength={200}
+            disabled={isPending}
+          />
+        </FormField>
+
+        <FormField
+          label="Puntaje mínimo para aprobar (%)"
+          htmlFor="quiz-passing-score"
+          error={passingScoreError}
+        >
+          <Input
+            id="quiz-passing-score"
+            name="passingScore"
+            type="number"
+            min={0}
+            max={100}
+            step={1}
+            value={passingScore}
+            onChange={(e) => setPassingScore(Number(e.target.value))}
+            required
             disabled={isPending}
           />
         </FormField>

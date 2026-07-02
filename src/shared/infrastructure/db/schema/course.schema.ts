@@ -123,6 +123,8 @@ export const assessments = pgTable(
       .notNull()
       .references(() => academies.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
+    /** Minimum percentage score (0-100, integer) required to pass this quiz. */
+    passingScore: integer('passing_score').notNull().default(70),
     /**
      * Typed quiz questions stored as schemaless JSONB — the domain layer
      * (QuizQuestion discriminated union + QuizQuestionFactory) enforces

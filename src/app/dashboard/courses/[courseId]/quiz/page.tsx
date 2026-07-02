@@ -6,7 +6,7 @@ import { PageHeader } from '@/shared/ui/molecules/page-header';
 import { UserMenu } from '../../../_components/user-menu';
 import { CoursesNavLink } from '../../_lib/courses-nav-link';
 import { requireInstructor } from '../../_lib/require-instructor';
-import { fromAssessmentView } from './_lib/quiz-form';
+import { fromAssessmentView, passingScoreFromView } from './_lib/quiz-form';
 import { QuizBuilderForm } from './_components/quiz-builder-form';
 
 interface QuizBuilderPageProps {
@@ -45,6 +45,7 @@ export default async function QuizBuilderPage({ params }: QuizBuilderPageProps) 
         <QuizBuilderForm
           courseId={courseId}
           initialTitle={assessment?.title ?? ''}
+          initialPassingScore={passingScoreFromView(assessment)}
           initialQuestions={fromAssessmentView(assessment)}
         />
       </div>

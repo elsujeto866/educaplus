@@ -13,6 +13,12 @@ export interface UpsertAssessmentInput {
   courseId: string;
   academyId: string;
   title: string;
+  /**
+   * Minimum percentage score (0-100, integer) required to pass this quiz.
+   * Required here — defaulting (absent → 70) happens at the zod boundary
+   * (saveQuizSchema), not in this use-case.
+   */
+  passingScore: number;
   /** Raw question payloads — validated via QuizQuestionFactory.create before persisting. */
   questions: RawQuizQuestion[];
 }
@@ -72,6 +78,7 @@ export class UpsertAssessmentUseCase {
       courseId: input.courseId,
       academyId: input.academyId,
       title: input.title,
+      passingScore: input.passingScore,
       questions,
       createdAt: now,
       updatedAt: now,

@@ -80,6 +80,7 @@ describe('UpsertAssessmentUseCase', () => {
         courseId: 'course-1',
         academyId: 'org_A',
         title: 'Quiz 1',
+        passingScore: 70,
         questions: [],
       }),
     ).rejects.toThrow(UnauthorizedError);
@@ -93,6 +94,7 @@ describe('UpsertAssessmentUseCase', () => {
         courseId: 'course-1',
         academyId: 'org_B',
         title: 'Evil Quiz',
+        passingScore: 70,
         questions: [],
       }),
     ).rejects.toThrow(UnauthorizedError);
@@ -108,6 +110,7 @@ describe('UpsertAssessmentUseCase', () => {
         courseId: 'course-belongs-to-org-B',
         academyId: 'org_A',
         title: 'Squatting Quiz',
+        passingScore: 70,
         questions: [],
       }),
     ).rejects.toThrow(CourseNotFoundError);
@@ -121,6 +124,7 @@ describe('UpsertAssessmentUseCase', () => {
       courseId: 'course-1',
       academyId: 'org_A',
       title: 'Quiz 1',
+      passingScore: 70,
       questions: [makeValidQuestionInput()],
     });
 
@@ -132,12 +136,30 @@ describe('UpsertAssessmentUseCase', () => {
     }));
   });
 
+  it('threads passingScore through to the constructed entity and the repo call', async () => {
+    const assessment = await useCase.execute(adminCtx, {
+      id: 'assess-1',
+      courseId: 'course-1',
+      academyId: 'org_A',
+      title: 'Quiz 1',
+      passingScore: 85,
+      questions: [],
+    });
+
+    expect(assessment.passingScore).toBe(85);
+    expect(assessmentRepo.upsert).toHaveBeenCalledWith(
+      adminCtx,
+      expect.objectContaining({ passingScore: 85 }),
+    );
+  });
+
   it('allows an instructor to upsert a valid quiz', async () => {
     const assessment = await useCase.execute(instructorCtx, {
       id: 'assess-1',
       courseId: 'course-1',
       academyId: 'org_A',
       title: 'Quiz 1',
+      passingScore: 70,
       questions: [],
     });
     expect(assessment.questions).toEqual([]);
@@ -149,6 +171,7 @@ describe('UpsertAssessmentUseCase', () => {
       courseId: 'course-1',
       academyId: 'org_A',
       title: 'Quiz 1',
+      passingScore: 70,
       questions: [],
     });
     expect(assessment.questions).toEqual([]);
@@ -161,6 +184,7 @@ describe('UpsertAssessmentUseCase', () => {
         courseId: 'course-1',
         academyId: 'org_A',
         title: 'Quiz 1',
+        passingScore: 70,
         questions: [makeValidQuestionInput({ correctOptionId: 'opt-missing' })],
       }),
     ).rejects.toThrow(InvalidQuizQuestionError);
@@ -173,6 +197,7 @@ describe('UpsertAssessmentUseCase', () => {
       courseId: 'course-1',
       academyId: 'org_A',
       title: 'Quiz 1',
+      passingScore: 70,
       questions: [makeValidQuestionInput({ id: 'q-1' })],
     });
 
@@ -181,6 +206,7 @@ describe('UpsertAssessmentUseCase', () => {
       courseId: 'course-1',
       academyId: 'org_A',
       title: 'Quiz 1 updated',
+      passingScore: 70,
       questions: [makeValidQuestionInput({ id: 'q-2', prompt: 'New question?' })],
     });
 

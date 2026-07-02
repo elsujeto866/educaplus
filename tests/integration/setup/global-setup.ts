@@ -27,6 +27,10 @@
  *      adds assessments.course_id (unique, cascade) + questions jsonb.
  *      FORCE ROW LEVEL SECURITY and the tenant_isolation policy on assessments
  *      are unaffected by these column ALTERs — no manual RLS re-assert needed).
+ *   9b. Apply drizzle migration 0004_assessment_passing_score.sql (adds
+ *      assessments.passing_score integer NOT NULL DEFAULT 70, plus a
+ *      defensive ALTER TABLE … FORCE ROW LEVEL SECURITY tail — verified by
+ *      the RLS suite).
  *   10. Seed academies org_A / org_B and one membership each (superuser bypasses
  *      RLS here — FORCE RLS applies to the owner but NOT to superusers, so seeds
  *      flow through without tenant context).
@@ -159,6 +163,22 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       .filter(Boolean);
 
     for (const stmt of stmts0003) {
+      await sql.unsafe(stmt);
+    }
+
+    // 6d. Apply 0004_assessment_passing_score.sql — adds
+    //     assessments.passing_score + a defensive FORCE ROW LEVEL SECURITY
+    //     re-assert. Split on the statement-breakpoint marker.
+    const raw0004 = readFileSync(
+      join(DRIZZLE_DIR, '0004_assessment_passing_score.sql'),
+      'utf-8',
+    );
+    const stmts0004 = raw0004
+      .split('--> statement-breakpoint')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    for (const stmt of stmts0004) {
       await sql.unsafe(stmt);
     }
 
@@ -296,15 +316,17 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       ON CONFLICT (id) DO NOTHING
     `;
 
-    // assessments — one per course (UNIQUE course_id constraint)
+    // assessments — one per course (UNIQUE course_id constraint). Explicit,
+    // distinct passing_score values per org so cross-tenant RLS assertions
+    // on the new column have something to distinguish.
     await sql`
-      INSERT INTO assessments (id, course_id, academy_id, title, questions)
-      VALUES ('a0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000001', 'org_A', 'Assessment A1', '[]')
+      INSERT INTO assessments (id, course_id, academy_id, title, passing_score, questions)
+      VALUES ('a0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000001', 'org_A', 'Assessment A1', 70, '[]')
       ON CONFLICT (id) DO NOTHING
     `;
     await sql`
-      INSERT INTO assessments (id, course_id, academy_id, title, questions)
-      VALUES ('b0000000-0000-0000-0000-000000000008', 'b0000000-0000-0000-0000-000000000001', 'org_B', 'Assessment B1', '[]')
+      INSERT INTO assessments (id, course_id, academy_id, title, passing_score, questions)
+      VALUES ('b0000000-0000-0000-0000-000000000008', 'b0000000-0000-0000-0000-000000000001', 'org_B', 'Assessment B1', 80, '[]')
       ON CONFLICT (id) DO NOTHING
     `;
   } finally {

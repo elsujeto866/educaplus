@@ -48,6 +48,25 @@ describe('assessment isolation — tenant read', () => {
     );
     expect(rows).toHaveLength(0);
   });
+
+  it('reads passing_score for its own tenant only (0004 column, seeded org_A=70)', async () => {
+    const rows = await asTenant(
+      'org_A',
+      (tx) =>
+        tx`SELECT passing_score FROM assessments WHERE course_id = 'a0000000-0000-0000-0000-000000000001'`,
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.['passing_score']).toBe(70);
+  });
+
+  it('blocks cross-tenant read of passing_score: org_A context cannot see org_B value (seeded 80)', async () => {
+    const rows = await asTenant(
+      'org_A',
+      (tx) =>
+        tx`SELECT passing_score FROM assessments WHERE course_id = 'b0000000-0000-0000-0000-000000000001'`,
+    );
+    expect(rows).toHaveLength(0);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -172,6 +191,29 @@ describe('assessment isolation — DB-enforced constraints', () => {
       (tx) => tx`SELECT id FROM assessments WHERE course_id = ${courseId}`,
     );
     expect(rows).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FORCE RLS + tenant_isolation policy survive the 0004 migration
+// (spec.md: "FORCE RLS and policy survive the migration")
+// ---------------------------------------------------------------------------
+
+describe('assessment isolation — FORCE RLS survives 0004 ALTER', () => {
+  it('assessments still has FORCE ROW LEVEL SECURITY after the passing_score ALTER', async () => {
+    const rows = await superuserClient`
+      SELECT relforcerowsecurity FROM pg_class WHERE relname = 'assessments'
+    `;
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.['relforcerowsecurity']).toBe(true);
+  });
+
+  it('the tenant_isolation policy is still active on assessments', async () => {
+    const rows = await superuserClient`
+      SELECT policyname FROM pg_policies
+      WHERE tablename = 'assessments' AND policyname = 'tenant_isolation'
+    `;
+    expect(rows).toHaveLength(1);
   });
 });
 

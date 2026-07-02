@@ -233,3 +233,26 @@ export function fromAssessmentView(view: AssessmentView | null): QuizQuestionDra
     correctOptionId: question.correctOptionId,
   }));
 }
+
+/** Default passing score for a course with no prior assessment (mirrors the DB default). */
+export const DEFAULT_PASSING_SCORE = 70;
+
+/**
+ * Prefill helper for the passing-score field — mirrors `fromAssessmentView`.
+ * A course with no assessment yet prefills with `DEFAULT_PASSING_SCORE`.
+ */
+export function passingScoreFromView(view: AssessmentView | null): number {
+  return view?.passingScore ?? DEFAULT_PASSING_SCORE;
+}
+
+/**
+ * Client-side mirror of the domain's passingScore invariant (spec.md:
+ * "Client rejects invalid value before submit"). Pure — no framework
+ * imports. Returns an error message, or `undefined` when valid.
+ */
+export function validatePassingScore(value: number): string | undefined {
+  if (!Number.isInteger(value) || value < 0 || value > 100) {
+    return 'El puntaje debe ser un entero entre 0 y 100.';
+  }
+  return undefined;
+}

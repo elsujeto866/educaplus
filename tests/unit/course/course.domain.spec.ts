@@ -352,6 +352,7 @@ describe('Assessment', () => {
       courseId: 'course-1',
       academyId: 'org_A',
       title: 'Quiz 1',
+      passingScore: 70,
       questions: [makeQuizQuestion()],
       createdAt: now,
       updatedAt: now,
@@ -359,6 +360,7 @@ describe('Assessment', () => {
     expect(assessment.id).toBe('assess-1');
     expect(assessment.courseId).toBe('course-1');
     expect(assessment.questions).toHaveLength(1);
+    expect(assessment.passingScore).toBe(70);
   });
 
   it('accepts an empty questions array as a valid draft state', () => {
@@ -367,6 +369,7 @@ describe('Assessment', () => {
       courseId: 'course-1',
       academyId: 'org_A',
       title: 'Quiz 1',
+      passingScore: 70,
       questions: [],
       createdAt: now,
       updatedAt: now,
@@ -381,6 +384,7 @@ describe('Assessment', () => {
         courseId: 'course-1',
         academyId: 'org_A',
         title: '',
+        passingScore: 70,
         questions: [],
         createdAt: now,
         updatedAt: now,
@@ -395,6 +399,7 @@ describe('Assessment', () => {
         courseId: '',
         academyId: 'org_A',
         title: 'Quiz 1',
+        passingScore: 70,
         questions: [],
         createdAt: now,
         updatedAt: now,
@@ -409,11 +414,81 @@ describe('Assessment', () => {
         courseId: 'course-1',
         academyId: 'org_A',
         title: 'Quiz 1',
+        passingScore: 70,
         questions: [makeQuizQuestion({ id: 'q-1' }), makeQuizQuestion({ id: 'q-1' })],
         createdAt: now,
         updatedAt: now,
       }),
     ).toThrow(InvalidAssessmentError);
+  });
+
+  it('throws InvalidAssessmentError when passingScore is out of range (101 or -1)', () => {
+    expect(() =>
+      new Assessment({
+        id: 'assess-1',
+        courseId: 'course-1',
+        academyId: 'org_A',
+        title: 'Quiz 1',
+        passingScore: 101,
+        questions: [],
+        createdAt: now,
+        updatedAt: now,
+      }),
+    ).toThrow(InvalidAssessmentError);
+
+    expect(() =>
+      new Assessment({
+        id: 'assess-1',
+        courseId: 'course-1',
+        academyId: 'org_A',
+        title: 'Quiz 1',
+        passingScore: -1,
+        questions: [],
+        createdAt: now,
+        updatedAt: now,
+      }),
+    ).toThrow(InvalidAssessmentError);
+  });
+
+  it('throws InvalidAssessmentError when passingScore is not an integer (70.5)', () => {
+    expect(() =>
+      new Assessment({
+        id: 'assess-1',
+        courseId: 'course-1',
+        academyId: 'org_A',
+        title: 'Quiz 1',
+        passingScore: 70.5,
+        questions: [],
+        createdAt: now,
+        updatedAt: now,
+      }),
+    ).toThrow(InvalidAssessmentError);
+  });
+
+  it('accepts boundary passingScore values 0 and 100', () => {
+    const low = new Assessment({
+      id: 'assess-1',
+      courseId: 'course-1',
+      academyId: 'org_A',
+      title: 'Quiz 1',
+      passingScore: 0,
+      questions: [],
+      createdAt: now,
+      updatedAt: now,
+    });
+    expect(low.passingScore).toBe(0);
+
+    const high = new Assessment({
+      id: 'assess-1',
+      courseId: 'course-1',
+      academyId: 'org_A',
+      title: 'Quiz 1',
+      passingScore: 100,
+      questions: [],
+      createdAt: now,
+      updatedAt: now,
+    });
+    expect(high.passingScore).toBe(100);
   });
 });
 

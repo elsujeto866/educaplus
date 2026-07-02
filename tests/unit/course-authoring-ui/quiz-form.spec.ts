@@ -214,6 +214,7 @@ describe('fromAssessmentView', () => {
       id: 'assess-1',
       courseId: 'course-1',
       title: 'Quiz final',
+      passingScore: 70,
       questions: [
         {
           type: 'single',
