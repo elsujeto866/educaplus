@@ -46,12 +46,17 @@ export default async function CoursesPage() {
           <ul className="flex flex-col gap-3">
             {courses.map((course) => (
               <li key={course.id}>
-                <Card className="flex items-center justify-between">
-                  <span className="font-medium text-foreground">{course.title}</span>
-                  <span className="rounded-full border border-border bg-surface-elevated px-3 py-1 text-xs font-medium uppercase tracking-wide text-primary">
-                    {STATUS_LABEL[course.status]}
-                  </span>
-                </Card>
+                <Link
+                  href={`/dashboard/courses/${course.id}`}
+                  className="block rounded-lg transition-colors hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  <Card className="flex items-center justify-between">
+                    <span className="font-medium text-foreground">{course.title}</span>
+                    <span className="rounded-full border border-border bg-surface-elevated px-3 py-1 text-xs font-medium uppercase tracking-wide text-primary">
+                      {STATUS_LABEL[course.status]}
+                    </span>
+                  </Card>
+                </Link>
               </li>
             ))}
           </ul>
