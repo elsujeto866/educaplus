@@ -31,6 +31,10 @@ const DOMAIN_ERROR_MESSAGES: Record<string, string> = {
   // but name-matched here too so saveQuizAction's single try/catch can map
   // it via the same toActionError() call, per design.md's canonical flow.
   InvalidQuizPayloadError: 'El cuestionario tiene un formato inválido.',
+  // Slice 4b-ii (student quiz-taking): thrown by SubmitAttemptUseCase.
+  LearnerNotEnrolledError: 'Necesitás estar inscripto para rendir la evaluación.',
+  EmptyQuizError: 'La evaluación todavía no tiene preguntas.',
+  InvalidAttemptError: 'Las respuestas enviadas no son válidas.',
 };
 
 /** Extracts the first Zod issue message, falling back to a generic one. */

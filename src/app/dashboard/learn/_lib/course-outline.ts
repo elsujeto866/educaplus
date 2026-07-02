@@ -11,8 +11,17 @@ import type { CourseOutline } from '@/shared/ui/organisms/course-outline-sidebar
  * href-less labels — mirroring the main pane's enroll-gate and the
  * authoring-mode behavior — so no lesson link bounces a non-enrolled
  * visitor back to the lesson-viewer's redirect guard.
+ *
+ * `quiz` (Slice 4b-ii): optional `{questionCount}`, read separately by the
+ * caller via `GetAssessmentUseCase` (kept out of `EnrolledCourseView` to
+ * leave 4b-i's backend frozen). Appends a single `extraNodes` entry of
+ * kind `quiz` linking to the take-quiz route ONLY when `questionCount>0`
+ * (spec.md's "Empty quiz has no entry point").
  */
-export function toCourseOutline(view: EnrolledCourseView): CourseOutline {
+export function toCourseOutline(
+  view: EnrolledCourseView,
+  quiz?: { questionCount: number } | null,
+): CourseOutline {
   return {
     courseId: view.course.id,
     courseTitle: view.course.title,
@@ -30,5 +39,17 @@ export function toCourseOutline(view: EnrolledCourseView): CourseOutline {
         completed: lesson.completed,
       })),
     })),
+    ...(quiz && quiz.questionCount > 0
+      ? {
+          extraNodes: [
+            {
+              id: 'quiz',
+              label: 'Evaluación final',
+              href: `/dashboard/learn/courses/${view.course.id}/quiz`,
+              kind: 'quiz' as const,
+            },
+          ],
+        }
+      : {}),
   };
 }

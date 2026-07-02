@@ -20,9 +20,11 @@ vi.mock('../../../src/shared/infrastructure/auth/clerk', () => ({
 }));
 
 const getEnrolledCourseExecuteMock = vi.fn();
+const getAssessmentExecuteMock = vi.fn();
 vi.mock('../../../src/modules/course/composition', () => ({
   makeCourseComposition: () => ({
     getEnrolledCourse: { execute: getEnrolledCourseExecuteMock },
+    getAssessment: { execute: getAssessmentExecuteMock },
   }),
 }));
 
@@ -73,6 +75,7 @@ describe('Course viewer page', () => {
   beforeEach(() => {
     getTenantContextMock.mockReset().mockResolvedValue(studentCtx);
     getEnrolledCourseExecuteMock.mockReset();
+    getAssessmentExecuteMock.mockReset().mockResolvedValue(null);
     notFoundMock.mockClear();
   });
 

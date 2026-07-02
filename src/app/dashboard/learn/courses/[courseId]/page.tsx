@@ -29,10 +29,12 @@ interface CourseViewerPageProps {
 export default async function CourseViewerPage({ params }: CourseViewerPageProps) {
   const { courseId } = await params;
   const ctx = await getTenantContext();
-  const view = await makeCourseComposition().getEnrolledCourse.execute(ctx, courseId);
+  const composition = makeCourseComposition();
+  const view = await composition.getEnrolledCourse.execute(ctx, courseId);
 
   if (!view) notFound();
 
+  const assessment = await composition.getAssessment.execute(ctx, courseId);
   const { course, modules, progressPercent, isEnrolled } = view;
 
   return (
@@ -46,7 +48,11 @@ export default async function CourseViewerPage({ params }: CourseViewerPageProps
         </Link>
       }
       userSlot={<UserMenu />}
-      sidebar={<CourseOutlineNav outline={toCourseOutline(view)} />}
+      sidebar={
+        <CourseOutlineNav
+          outline={toCourseOutline(view, { questionCount: assessment?.questions.length ?? 0 })}
+        />
+      }
     >
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <PageHeader title={course.title} subtitle={course.description ?? ''} />

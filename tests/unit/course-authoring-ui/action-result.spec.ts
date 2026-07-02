@@ -97,6 +97,27 @@ describe('toActionError', () => {
     });
   });
 
+  it('maps a domain LearnerNotEnrolledError (matched by name) to a Spanish message', () => {
+    expect(toActionError(namedError('LearnerNotEnrolledError'))).toEqual({
+      ok: false,
+      error: 'Necesitás estar inscripto para rendir la evaluación.',
+    });
+  });
+
+  it('maps a domain EmptyQuizError (matched by name) to a Spanish message', () => {
+    expect(toActionError(namedError('EmptyQuizError'))).toEqual({
+      ok: false,
+      error: 'La evaluación todavía no tiene preguntas.',
+    });
+  });
+
+  it('maps a domain InvalidAttemptError (matched by name) to a Spanish message', () => {
+    expect(toActionError(namedError('InvalidAttemptError'))).toEqual({
+      ok: false,
+      error: 'Las respuestas enviadas no son válidas.',
+    });
+  });
+
   it('falls back to a generic Spanish message for unrecognized errors', () => {
     expect(toActionError(namedError('SomeUnknownError'))).toEqual({
       ok: false,
