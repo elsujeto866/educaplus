@@ -2,3 +2,4 @@
 // picks them up via the single `schema: './src/shared/infrastructure/db/schema/*'` glob.
 export * from './academy.schema';
 export * from './course.schema';
+export * from './simulator.schema';

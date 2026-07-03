@@ -34,6 +34,10 @@
  *   6f. Apply drizzle migration 0006_certificates.sql (creates certificates
  *      table plus the LOAD-BEARING manual GRANT + FORCE ROW LEVEL SECURITY
  *      tail — verified by the RLS suite).
+ *   6g. Apply drizzle migration 0007_simulator_rls.sql (creates the 4
+ *      exam-simulator-question-bank tables — question_banks, questions,
+ *      simulators, simulator_attempts — plus the LOAD-BEARING manual GRANT +
+ *      FORCE ROW LEVEL SECURITY tail per table, verified by the RLS suite).
  *   10. Seed academies org_A / org_B and one membership each (superuser bypasses
  *      RLS here — FORCE RLS applies to the owner but NOT to superusers, so seeds
  *      flow through without tenant context).
@@ -41,6 +45,9 @@
  *      so cross-tenant RLS assertions have rows on both sides to compare against.
  *   12. Seed one certificate per org so certificate-isolation.spec.ts has rows
  *      on both sides to compare against.
+ *   13. Seed one question_bank → question → simulator → simulator_attempt
+ *      chain per org so the 4 new isolation specs have rows on both sides to
+ *      compare against.
  *
  * Returns a teardown function (no-op — the container is torn down externally).
  */
@@ -88,6 +95,12 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     //    assessment_attempts references assessments — must drop first.
     //    certificates references courses + academies (no children) — drop
     //    first so it never blocks a later CASCADE from courses/academies.
+    //    simulator_attempts → simulators → questions → question_banks must
+    //    drop in that child-first order, before academies.
+    await sql.unsafe('DROP TABLE IF EXISTS simulator_attempts CASCADE');
+    await sql.unsafe('DROP TABLE IF EXISTS simulators CASCADE');
+    await sql.unsafe('DROP TABLE IF EXISTS questions CASCADE');
+    await sql.unsafe('DROP TABLE IF EXISTS question_banks CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS certificates CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS lesson_progress CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS lesson_video_assets CASCADE');
@@ -220,6 +233,21 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       .filter(Boolean);
 
     for (const stmt of stmts0006) {
+      await sql.unsafe(stmt);
+    }
+
+    // 6g. Apply 0007_simulator_rls.sql — creates the 4 exam-simulator tables
+    //     (fresh CREATE TABLE + ENABLE RLS + policy per table) plus the
+    //     LOAD-BEARING manual GRANT + FORCE ROW LEVEL SECURITY tail per table
+    //     (drizzle-kit never emits FORCE/GRANT — these are NEW forced
+    //     tables, not a re-assert).
+    const raw0007 = readFileSync(join(DRIZZLE_DIR, '0007_simulator_rls.sql'), 'utf-8');
+    const stmts0007 = raw0007
+      .split('--> statement-breakpoint')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    for (const stmt of stmts0007) {
       await sql.unsafe(stmt);
     }
 
@@ -396,6 +424,100 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     await sql`
       INSERT INTO certificates (id, course_id, academy_id, clerk_user_id, certificate_code, score, student_name, course_title, academy_name)
       VALUES ('b0000000-0000-0000-0000-00000000000a', 'b0000000-0000-0000-0000-000000000001', 'org_B', 'user_B1', 'CERT-2026-BBBBBBBB', 100, 'Student B1', 'Course B1', 'Academy B')
+      ON CONFLICT (id) DO NOTHING
+    `;
+
+    // 13. Seed one question_bank → question → simulator → simulator_attempt
+    //     chain per org so the 4 new exam-simulator isolation specs have rows
+    //     on both sides to compare against.
+
+    // question_banks
+    await sql`
+      INSERT INTO question_banks (id, academy_id, title)
+      VALUES ('a0000000-0000-0000-0000-00000000000b', 'org_A', 'Bank A1')
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO question_banks (id, academy_id, title)
+      VALUES ('b0000000-0000-0000-0000-00000000000b', 'org_B', 'Bank B1')
+      ON CONFLICT (id) DO NOTHING
+    `;
+
+    // questions
+    await sql`
+      INSERT INTO questions (id, bank_id, academy_id, prompt, options, correct_option_id, topic, difficulty)
+      VALUES (
+        'a0000000-0000-0000-0000-00000000000c',
+        'a0000000-0000-0000-0000-00000000000b',
+        'org_A',
+        '2 + 2 = ?',
+        '[{"id":"opt1","label":"3"},{"id":"opt2","label":"4"}]',
+        'opt2',
+        'algebra',
+        'easy'
+      )
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO questions (id, bank_id, academy_id, prompt, options, correct_option_id, topic, difficulty)
+      VALUES (
+        'b0000000-0000-0000-0000-00000000000c',
+        'b0000000-0000-0000-0000-00000000000b',
+        'org_B',
+        '3 + 3 = ?',
+        '[{"id":"opt1","label":"6"},{"id":"opt2","label":"5"}]',
+        'opt1',
+        'algebra',
+        'easy'
+      )
+      ON CONFLICT (id) DO NOTHING
+    `;
+
+    // simulators
+    await sql`
+      INSERT INTO simulators (id, academy_id, bank_id, title, question_count, passing_score, time_limit_minutes, attempt_limit, status)
+      VALUES ('a0000000-0000-0000-0000-00000000000d', 'org_A', 'a0000000-0000-0000-0000-00000000000b', 'Simulator A1', 1, 70, 30, 3, 'published')
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO simulators (id, academy_id, bank_id, title, question_count, passing_score, time_limit_minutes, attempt_limit, status)
+      VALUES ('b0000000-0000-0000-0000-00000000000d', 'org_B', 'b0000000-0000-0000-0000-00000000000b', 'Simulator B1', 1, 70, 30, 3, 'published')
+      ON CONFLICT (id) DO NOTHING
+    `;
+
+    // simulator_attempts — one submitted, passed attempt per org.
+    await sql`
+      INSERT INTO simulator_attempts (id, simulator_id, academy_id, clerk_user_id, status, frozen_questions, answers, score, passed, deadline_at, submitted_at)
+      VALUES (
+        'a0000000-0000-0000-0000-00000000000e',
+        'a0000000-0000-0000-0000-00000000000d',
+        'org_A',
+        'user_A1',
+        'submitted',
+        '[{"id":"a0000000-0000-0000-0000-00000000000c","prompt":"2 + 2 = ?","options":[{"id":"opt1","label":"3"},{"id":"opt2","label":"4"}],"correctOptionId":"opt2"}]',
+        '[{"questionId":"a0000000-0000-0000-0000-00000000000c","selectedOptionId":"opt2"}]',
+        100,
+        true,
+        now() + interval '30 minutes',
+        now()
+      )
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO simulator_attempts (id, simulator_id, academy_id, clerk_user_id, status, frozen_questions, answers, score, passed, deadline_at, submitted_at)
+      VALUES (
+        'b0000000-0000-0000-0000-00000000000e',
+        'b0000000-0000-0000-0000-00000000000d',
+        'org_B',
+        'user_B1',
+        'submitted',
+        '[{"id":"b0000000-0000-0000-0000-00000000000c","prompt":"3 + 3 = ?","options":[{"id":"opt1","label":"6"},{"id":"opt2","label":"5"}],"correctOptionId":"opt1"}]',
+        '[{"questionId":"b0000000-0000-0000-0000-00000000000c","selectedOptionId":"opt1"}]',
+        100,
+        true,
+        now() + interval '30 minutes',
+        now()
+      )
       ON CONFLICT (id) DO NOTHING
     `;
   } finally {
