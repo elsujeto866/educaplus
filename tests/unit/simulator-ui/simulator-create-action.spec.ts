@@ -137,6 +137,59 @@ describe('createSimulatorAction', () => {
     expect(redirectMock).toHaveBeenCalledWith('/dashboard/simulators/sim-new/edit');
   });
 
+  it('sends issuesCertificate=true when the checkbox is present (checked, Slice S6)', async () => {
+    createSimulatorExecuteMock.mockResolvedValue({ id: 'sim-cert-on' });
+    const { createSimulatorAction } = await import(
+      '../../../src/app/dashboard/simulators/banks/[bankId]/simulators/actions'
+    );
+
+    await expect(
+      createSimulatorAction(
+        'bank-1',
+        initialState,
+        formDataWith({
+          title: 'Simulacro con certificado',
+          questionCount: '10',
+          passingScore: '70',
+          timeLimitMinutes: '45',
+          attemptLimit: '3',
+          issuesCertificate: 'on',
+        }),
+      ),
+    ).rejects.toBeInstanceOf(FakeRedirectSignal);
+
+    expect(createSimulatorExecuteMock).toHaveBeenCalledWith(
+      instructorCtx,
+      expect.objectContaining({ issuesCertificate: true }),
+    );
+  });
+
+  it('sends issuesCertificate=false when the checkbox is absent (unchecked, Slice S6)', async () => {
+    createSimulatorExecuteMock.mockResolvedValue({ id: 'sim-cert-off' });
+    const { createSimulatorAction } = await import(
+      '../../../src/app/dashboard/simulators/banks/[bankId]/simulators/actions'
+    );
+
+    await expect(
+      createSimulatorAction(
+        'bank-1',
+        initialState,
+        formDataWith({
+          title: 'Simulacro sin certificado',
+          questionCount: '10',
+          passingScore: '70',
+          timeLimitMinutes: '45',
+          attemptLimit: '3',
+        }),
+      ),
+    ).rejects.toBeInstanceOf(FakeRedirectSignal);
+
+    expect(createSimulatorExecuteMock).toHaveBeenCalledWith(
+      instructorCtx,
+      expect.objectContaining({ issuesCertificate: false }),
+    );
+  });
+
   it('sends topicFilter=null when no topics are selected', async () => {
     createSimulatorExecuteMock.mockResolvedValue({ id: 'sim-new-2' });
     const { createSimulatorAction } = await import(

@@ -105,6 +105,16 @@ export function CreateSimulatorForm({ bankId, topics }: CreateSimulatorFormProps
             ))}
           </fieldset>
         ) : null}
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            name="issuesCertificate"
+            defaultChecked
+            className="h-4 w-4 accent-primary"
+            disabled={isPending}
+          />
+          Emitir certificado al aprobar
+        </label>
         <Button type="submit" disabled={isPending}>
           {isPending ? 'Creando...' : 'Crear simulacro'}
         </Button>

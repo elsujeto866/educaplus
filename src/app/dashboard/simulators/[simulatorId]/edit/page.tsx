@@ -67,6 +67,7 @@ export default async function SimulatorEditPage({ params }: SimulatorEditPagePro
           attemptLimit={simulator.attemptLimit}
           topicFilter={simulator.topicFilter ?? []}
           topics={topics}
+          issuesCertificate={simulator.issuesCertificate}
         />
       </div>
     </AppShell>

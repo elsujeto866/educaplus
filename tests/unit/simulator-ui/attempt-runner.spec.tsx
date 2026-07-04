@@ -56,4 +56,26 @@ describe('AttemptRunner', () => {
 
     expect(screen.queryByRole('link', { name: /ver certificado/i })).not.toBeInTheDocument();
   });
+
+  describe('issuesCertificate=false (Slice S6)', () => {
+    it('hides the "Ver certificado" link even when passed, if issuesCertificate is false', async () => {
+      const { AttemptRunner } = await import(
+        '../../../src/app/dashboard/learn/simulators/[simulatorId]/attempt/[attemptId]/_components/attempt-runner'
+      );
+
+      render(<AttemptRunner attempt={makeAttempt()} issuesCertificate={false} />);
+
+      expect(screen.queryByRole('link', { name: /ver certificado/i })).not.toBeInTheDocument();
+    });
+
+    it('shows the "Ver certificado" link when passed and issuesCertificate is true (default)', async () => {
+      const { AttemptRunner } = await import(
+        '../../../src/app/dashboard/learn/simulators/[simulatorId]/attempt/[attemptId]/_components/attempt-runner'
+      );
+
+      render(<AttemptRunner attempt={makeAttempt()} issuesCertificate />);
+
+      expect(screen.getByRole('link', { name: /ver certificado/i })).toBeInTheDocument();
+    });
+  });
 });

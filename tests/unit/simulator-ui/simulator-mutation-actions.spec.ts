@@ -103,6 +103,51 @@ describe('updateSimulatorAction', () => {
     expect(revalidatePathMock).toHaveBeenCalledWith('/dashboard/simulators/sim-1/edit');
   });
 
+  it('sends issuesCertificate=true when the checkbox is present (checked, Slice S6)', async () => {
+    updateSimulatorExecuteMock.mockResolvedValue({ id: 'sim-1' });
+    const { updateSimulatorAction } = await import('../../../src/app/dashboard/simulators/[simulatorId]/actions');
+
+    await updateSimulatorAction(
+      'sim-1',
+      initialState,
+      formDataWith({
+        title: 'Simulacro actualizado',
+        questionCount: '8',
+        passingScore: '80',
+        timeLimitMinutes: '40',
+        attemptLimit: '2',
+        issuesCertificate: 'on',
+      }),
+    );
+
+    expect(updateSimulatorExecuteMock).toHaveBeenCalledWith(
+      instructorCtx,
+      expect.objectContaining({ issuesCertificate: true }),
+    );
+  });
+
+  it('sends issuesCertificate=false when the checkbox is absent (unchecked, Slice S6)', async () => {
+    updateSimulatorExecuteMock.mockResolvedValue({ id: 'sim-1' });
+    const { updateSimulatorAction } = await import('../../../src/app/dashboard/simulators/[simulatorId]/actions');
+
+    await updateSimulatorAction(
+      'sim-1',
+      initialState,
+      formDataWith({
+        title: 'Simulacro actualizado',
+        questionCount: '8',
+        passingScore: '80',
+        timeLimitMinutes: '40',
+        attemptLimit: '2',
+      }),
+    );
+
+    expect(updateSimulatorExecuteMock).toHaveBeenCalledWith(
+      instructorCtx,
+      expect.objectContaining({ issuesCertificate: false }),
+    );
+  });
+
   it('maps SimulatorNotFoundError to a Spanish ActionResult', async () => {
     const notFound = new Error('Simulator "sim-1" does not exist');
     notFound.name = 'SimulatorNotFoundError';

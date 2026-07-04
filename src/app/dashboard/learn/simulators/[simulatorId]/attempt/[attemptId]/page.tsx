@@ -28,8 +28,17 @@ export default async function AttemptPage({ params }: AttemptPageProps) {
   const { simulatorId, attemptId } = await params;
   const ctx = await getTenantContext();
 
-  const attempt = await makeSimulatorComposition().getAttempt.execute(ctx, attemptId);
+  const composition = makeSimulatorComposition();
+  const attempt = await composition.getAttempt.execute(ctx, attemptId);
   if (!attempt || attempt.simulatorId !== simulatorId) notFound();
+
+  // Slice S6: the "Ver certificado" link must respect the bound simulator's
+  // issuesCertificate toggle, not just `passed`. Defaults to `false`
+  // (deny-by-default) on the defensive null case — a simulator this
+  // attempt belongs to should always resolve, but hiding the link is the
+  // safer failure mode if it somehow doesn't.
+  const simulator = await composition.getSimulator.execute(ctx, simulatorId);
+  const issuesCertificate = simulator?.issuesCertificate ?? false;
 
   return (
     <AppShell
@@ -45,7 +54,7 @@ export default async function AttemptPage({ params }: AttemptPageProps) {
     >
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <PageHeader title="Simulacro en curso" />
-        <AttemptRunner attempt={toAttemptView(attempt)} />
+        <AttemptRunner attempt={toAttemptView(attempt)} issuesCertificate={issuesCertificate} />
       </div>
     </AppShell>
   );

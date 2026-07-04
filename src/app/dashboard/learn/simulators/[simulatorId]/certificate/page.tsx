@@ -85,9 +85,17 @@ export default async function SimulatorCertificatePage({ params }: SimulatorCert
       studentName,
       simulatorTitle: simulator.title,
       academyName,
+      issuesCertificate: simulator.issuesCertificate,
     });
   } catch (error) {
-    if (error instanceof Error && error.name === 'SimulatorCertificateNotEarnedError') {
+    // Both are throw-based "skipped outcome" errors (Slice S6 adds the
+    // config-gate to the existing pass-gate) — neither should ever crash
+    // the page, both redirect back to the simulator detail view.
+    if (
+      error instanceof Error &&
+      (error.name === 'SimulatorCertificateNotEarnedError' ||
+        error.name === 'SimulatorCertificateNotConfiguredError')
+    ) {
       redirect(`/dashboard/learn/simulators/${simulatorId}`);
     }
     throw error;

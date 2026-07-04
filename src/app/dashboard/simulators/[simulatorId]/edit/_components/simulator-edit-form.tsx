@@ -21,6 +21,7 @@ interface SimulatorEditFormProps {
   attemptLimit: number;
   topicFilter: string[];
   topics: string[];
+  issuesCertificate: boolean;
 }
 
 /**
@@ -38,6 +39,7 @@ export function SimulatorEditForm({
   attemptLimit,
   topicFilter,
   topics,
+  issuesCertificate,
 }: SimulatorEditFormProps) {
   const boundAction = updateSimulatorAction.bind(null, simulatorId);
   const [state, formAction, isPending] = useActionState(boundAction, initialState);
@@ -137,6 +139,16 @@ export function SimulatorEditForm({
             ))}
           </fieldset>
         ) : null}
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            name="issuesCertificate"
+            defaultChecked={issuesCertificate}
+            className="h-4 w-4 accent-primary"
+            disabled={isPending}
+          />
+          Emitir certificado al aprobar
+        </label>
         <Button type="submit" disabled={isPending}>
           {isPending ? 'Guardando...' : 'Guardar cambios'}
         </Button>

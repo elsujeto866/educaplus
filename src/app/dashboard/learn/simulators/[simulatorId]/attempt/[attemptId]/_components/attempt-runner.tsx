@@ -11,6 +11,13 @@ import { AttemptResult } from './attempt-result';
 
 interface AttemptRunnerProps {
   attempt: AttemptView;
+  /**
+   * Whether the bound simulator is configured to issue certificates
+   * (Slice S6). Defaults to `true` so every existing caller that has not
+   * yet been updated to pass this prop keeps the pre-Slice-S6 behavior
+   * (always showing the link on a passed attempt).
+   */
+  issuesCertificate?: boolean;
 }
 
 /**
@@ -31,7 +38,7 @@ interface AttemptRunnerProps {
  * !== 'in_progress' — e.g. the page's `GetAttemptUseCase` call already
  * lazily expired it), the result renders immediately with no form at all.
  */
-export function AttemptRunner({ attempt }: AttemptRunnerProps) {
+export function AttemptRunner({ attempt, issuesCertificate = true }: AttemptRunnerProps) {
   const boundAction = submitAttemptAction.bind(null, attempt.id);
   const seedState: SubmitAttemptState =
     attempt.status === 'in_progress'
@@ -47,12 +54,15 @@ export function AttemptRunner({ attempt }: AttemptRunnerProps) {
   const formRef = useRef<HTMLFormElement>(null);
 
   if (state.ok) {
+    const certificateHrefProps = issuesCertificate
+      ? { certificateHref: `/dashboard/learn/simulators/${attempt.simulatorId}/certificate` }
+      : {};
     return (
       <AttemptResult
         score={state.score}
         passed={state.passed}
         status={state.status}
-        certificateHref={`/dashboard/learn/simulators/${attempt.simulatorId}/certificate`}
+        {...certificateHrefProps}
       />
     );
   }

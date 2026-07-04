@@ -53,6 +53,7 @@ export async function createSimulatorAction(
 ): Promise<ActionResult> {
   const rawDescription = formData.get('description');
   const topics = formData.getAll('topics').map((value) => value.toString());
+  const issuesCertificate = formData.has('issuesCertificate');
 
   const parsed = createSimulatorSchema.safeParse({
     title: (formData.get('title') ?? '').toString(),
@@ -82,6 +83,7 @@ export async function createSimulatorAction(
       timeLimitMinutes: parsed.data.timeLimitMinutes,
       attemptLimit: parsed.data.attemptLimit,
       topicFilter: topics.length > 0 ? topics : null,
+      issuesCertificate,
     });
   } catch (error) {
     return toActionError(error);

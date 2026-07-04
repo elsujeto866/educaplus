@@ -73,6 +73,7 @@ function simulator(overrides: Partial<Record<string, unknown>> = {}) {
     id: 'sim-1',
     title: 'Simulacro de Álgebra',
     status: 'published',
+    issuesCertificate: true,
     ...overrides,
   };
 }
@@ -140,6 +141,42 @@ describe('Simulator certificate page', () => {
 
     await expect(CertificatePage({ params: params() })).rejects.toThrow(FakeRedirectSignal);
     expect(redirectMock).toHaveBeenCalledWith('/dashboard/learn/simulators/sim-1');
+  });
+
+  it('redirects to the simulator detail page when SimulatorCertificateNotConfiguredError is thrown (Slice S6 toggle off)', async () => {
+    getSimulatorExecuteMock.mockResolvedValue(simulator());
+    class SimulatorCertificateNotConfiguredError extends Error {
+      constructor() {
+        super('not configured');
+        this.name = 'SimulatorCertificateNotConfiguredError';
+      }
+    }
+    issueSimulatorCertificateExecuteMock.mockRejectedValue(new SimulatorCertificateNotConfiguredError());
+    const CertificatePage = (
+      await import(
+        '../../../src/app/dashboard/learn/simulators/[simulatorId]/certificate/page'
+      )
+    ).default;
+
+    await expect(CertificatePage({ params: params() })).rejects.toThrow(FakeRedirectSignal);
+    expect(redirectMock).toHaveBeenCalledWith('/dashboard/learn/simulators/sim-1');
+  });
+
+  it('passes the simulator\'s issuesCertificate flag through to issueSimulatorCertificate.execute (Slice S6)', async () => {
+    getSimulatorExecuteMock.mockResolvedValue(simulator({ issuesCertificate: false }));
+    issueSimulatorCertificateExecuteMock.mockResolvedValue(certificate());
+    const CertificatePage = (
+      await import(
+        '../../../src/app/dashboard/learn/simulators/[simulatorId]/certificate/page'
+      )
+    ).default;
+
+    await CertificatePage({ params: params() }).catch(() => undefined);
+
+    expect(issueSimulatorCertificateExecuteMock).toHaveBeenCalledWith(
+      studentCtx,
+      expect.objectContaining({ issuesCertificate: false }),
+    );
   });
 
   it('renders the certificate view on success', async () => {
