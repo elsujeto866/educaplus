@@ -47,7 +47,14 @@ export function AttemptRunner({ attempt }: AttemptRunnerProps) {
   const formRef = useRef<HTMLFormElement>(null);
 
   if (state.ok) {
-    return <AttemptResult score={state.score} passed={state.passed} status={state.status} />;
+    return (
+      <AttemptResult
+        score={state.score}
+        passed={state.passed}
+        status={state.status}
+        certificateHref={`/dashboard/learn/simulators/${attempt.simulatorId}/certificate`}
+      />
+    );
   }
 
   const payload = JSON.stringify(
