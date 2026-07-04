@@ -213,6 +213,51 @@ describe('CreateSimulatorUseCase', () => {
     expect(simulatorRepo.create).not.toHaveBeenCalled();
   });
 
+  it('defaults issuesCertificate to true when omitted (Slice S6)', async () => {
+    const simulatorRepo = makeSimulatorRepo();
+    const bankRepo = makeBankRepo({ findById: vi.fn().mockResolvedValue(makeBank()) });
+    const useCase = new CreateSimulatorUseCase(simulatorRepo, bankRepo);
+
+    const sim = await useCase.execute(adminCtx, {
+      id: 'sim-6',
+      academyId: 'org_A',
+      bankId: 'bank-1',
+      title: 'Simulacro 6',
+      questionCount: 5,
+      passingScore: 60,
+      timeLimitMinutes: 20,
+      attemptLimit: 2,
+      topicFilter: null,
+    });
+
+    expect(sim.issuesCertificate).toBe(true);
+  });
+
+  it('creates with issuesCertificate=false when explicitly requested (Slice S6)', async () => {
+    const simulatorRepo = makeSimulatorRepo();
+    const bankRepo = makeBankRepo({ findById: vi.fn().mockResolvedValue(makeBank()) });
+    const useCase = new CreateSimulatorUseCase(simulatorRepo, bankRepo);
+
+    const sim = await useCase.execute(adminCtx, {
+      id: 'sim-7',
+      academyId: 'org_A',
+      bankId: 'bank-1',
+      title: 'Simulacro 7',
+      questionCount: 5,
+      passingScore: 60,
+      timeLimitMinutes: 20,
+      attemptLimit: 2,
+      topicFilter: null,
+      issuesCertificate: false,
+    });
+
+    expect(sim.issuesCertificate).toBe(false);
+    expect(simulatorRepo.create).toHaveBeenCalledWith(
+      adminCtx,
+      expect.objectContaining({ issuesCertificate: false }),
+    );
+  });
+
   it('propagates InvalidSimulatorError from the entity for a bad questionCount', async () => {
     const simulatorRepo = makeSimulatorRepo();
     const bankRepo = makeBankRepo({ findById: vi.fn().mockResolvedValue(makeBank()) });
@@ -253,6 +298,7 @@ describe('UpdateSimulatorUseCase', () => {
       timeLimitMinutes: 45,
       attemptLimit: 5,
       topicFilter: ['algebra'],
+      issuesCertificate: true,
     });
 
     expect(updated.title).toBe('Actualizado');
@@ -276,8 +322,53 @@ describe('UpdateSimulatorUseCase', () => {
         timeLimitMinutes: 20,
         attemptLimit: 2,
         topicFilter: null,
+        issuesCertificate: true,
       }),
     ).rejects.toThrow(SimulatorNotFoundError);
+  });
+
+  it('toggles issuesCertificate from true to false (Slice S6)', async () => {
+    const existing = makeSimulator({ issuesCertificate: true });
+    const simulatorRepo = makeSimulatorRepo({ findById: vi.fn().mockResolvedValue(existing) });
+    const useCase = new UpdateSimulatorUseCase(simulatorRepo);
+
+    const updated = await useCase.execute(adminCtx, {
+      id: 'sim-1',
+      title: existing.title,
+      description: existing.description,
+      questionCount: existing.questionCount,
+      passingScore: existing.passingScore,
+      timeLimitMinutes: existing.timeLimitMinutes,
+      attemptLimit: existing.attemptLimit,
+      topicFilter: existing.topicFilter,
+      issuesCertificate: false,
+    });
+
+    expect(updated.issuesCertificate).toBe(false);
+    expect(simulatorRepo.update).toHaveBeenCalledWith(
+      adminCtx,
+      expect.objectContaining({ issuesCertificate: false }),
+    );
+  });
+
+  it('toggles issuesCertificate from false back to true (Slice S6)', async () => {
+    const existing = makeSimulator({ issuesCertificate: false });
+    const simulatorRepo = makeSimulatorRepo({ findById: vi.fn().mockResolvedValue(existing) });
+    const useCase = new UpdateSimulatorUseCase(simulatorRepo);
+
+    const updated = await useCase.execute(adminCtx, {
+      id: 'sim-1',
+      title: existing.title,
+      description: existing.description,
+      questionCount: existing.questionCount,
+      passingScore: existing.passingScore,
+      timeLimitMinutes: existing.timeLimitMinutes,
+      attemptLimit: existing.attemptLimit,
+      topicFilter: existing.topicFilter,
+      issuesCertificate: true,
+    });
+
+    expect(updated.issuesCertificate).toBe(true);
   });
 
   it('throws UnauthorizedError when role is student', async () => {
@@ -294,6 +385,7 @@ describe('UpdateSimulatorUseCase', () => {
         timeLimitMinutes: 20,
         attemptLimit: 2,
         topicFilter: null,
+        issuesCertificate: true,
       }),
     ).rejects.toThrow(UnauthorizedError);
     expect(simulatorRepo.update).not.toHaveBeenCalled();

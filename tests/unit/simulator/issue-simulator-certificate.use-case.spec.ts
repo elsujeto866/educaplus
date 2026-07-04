@@ -10,7 +10,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { TenantContext } from '../../../src/shared/kernel/tenant-context';
 import { IssueSimulatorCertificateUseCase } from '../../../src/modules/simulator/application/issue-simulator-certificate.use-case';
 import type { IssueSimulatorCertificateInput } from '../../../src/modules/simulator/application/issue-simulator-certificate.use-case';
-import { SimulatorCertificateNotEarnedError } from '../../../src/modules/simulator/domain/errors';
+import {
+  SimulatorCertificateNotEarnedError,
+  SimulatorCertificateNotConfiguredError,
+} from '../../../src/modules/simulator/domain/errors';
 import { SimulatorCertificate } from '../../../src/modules/simulator/domain/simulator-certificate.entity';
 import { SimulatorAttempt } from '../../../src/modules/simulator/domain/simulator-attempt.entity';
 import type { SimulatorAttemptRepository } from '../../../src/modules/simulator/domain/ports/simulator-attempt.repository';
@@ -26,6 +29,7 @@ function makeInput(overrides: Partial<IssueSimulatorCertificateInput> = {}): Iss
     studentName: 'Jane Student',
     simulatorTitle: 'Simulator One',
     academyName: 'Academy A',
+    issuesCertificate: true,
     ...overrides,
   };
 }
@@ -170,5 +174,42 @@ describe('IssueSimulatorCertificateUseCase', () => {
     certificateRepo.create = vi.fn().mockRejectedValue(new Error('connection lost'));
 
     await expect(useCase.execute(studentCtx, makeInput())).rejects.toThrow('connection lost');
+  });
+
+  // ---------------------------------------------------------------------
+  // Slice S6 — per-simulator certificate toggle gate
+  // ---------------------------------------------------------------------
+
+  describe('issuesCertificate gate (Slice S6)', () => {
+    it('issues a certificate as before when issuesCertificate is true and the caller passed', async () => {
+      const result = await useCase.execute(studentCtx, makeInput({ issuesCertificate: true }));
+
+      expect(result).toBeInstanceOf(SimulatorCertificate);
+      expect(certificateRepo.create).toHaveBeenCalledOnce();
+    });
+
+    it('throws SimulatorCertificateNotConfiguredError and creates no row when issuesCertificate is false', async () => {
+      await expect(
+        useCase.execute(studentCtx, makeInput({ issuesCertificate: false })),
+      ).rejects.toThrow(SimulatorCertificateNotConfiguredError);
+      expect(certificateRepo.create).not.toHaveBeenCalled();
+    });
+
+    it('does not even consult the pass-gate when issuesCertificate is false (cheap gate, short-circuits before findLatestPassed)', async () => {
+      await expect(
+        useCase.execute(studentCtx, makeInput({ issuesCertificate: false })),
+      ).rejects.toThrow(SimulatorCertificateNotConfiguredError);
+      expect(attemptRepo.findLatestPassed).not.toHaveBeenCalled();
+    });
+
+    it('returns an existing certificate unaffected even when issuesCertificate is now false (immutability wins over a later config change)', async () => {
+      const existing = makeCertificate();
+      certificateRepo.findBySimulatorAndUser = vi.fn().mockResolvedValue(existing);
+
+      const result = await useCase.execute(studentCtx, makeInput({ issuesCertificate: false }));
+
+      expect(result).toBe(existing);
+      expect(certificateRepo.create).not.toHaveBeenCalled();
+    });
   });
 });

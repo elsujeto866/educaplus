@@ -13,6 +13,12 @@ export interface UpdateSimulatorInput {
   timeLimitMinutes: number;
   attemptLimit: number;
   topicFilter?: string[] | null;
+  /**
+   * Required (unlike Create's optional default-true) — the edit form always
+   * submits the checkbox's explicit checked/unchecked state, so there is no
+   * ambiguous "omitted" case to default here (Slice S6).
+   */
+  issuesCertificate: boolean;
 }
 
 /**
@@ -43,6 +49,7 @@ export class UpdateSimulatorUseCase {
       timeLimitMinutes: input.timeLimitMinutes,
       attemptLimit: input.attemptLimit,
       topicFilter: input.topicFilter ?? null,
+      issuesCertificate: input.issuesCertificate,
       updatedAt: new Date(),
     });
 

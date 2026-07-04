@@ -27,6 +27,13 @@ export interface SimulatorProps {
   /** Nullable — flat string[] of topics; null/empty means no topic filter. */
   topicFilter?: string[] | null;
   status: 'draft' | 'published';
+  /**
+   * Whether passing this simulator issues a certificate (Slice S6 —
+   * spec.md "Certificate on first pass (optional per simulator)"). Defaults
+   * to `true` when omitted so every pre-existing simulator (created before
+   * this column existed) keeps issuing certificates unchanged.
+   */
+  issuesCertificate?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -56,6 +63,7 @@ export class Simulator {
   readonly selectionStrategy: SelectionStrategy;
   readonly topicFilter: string[] | null;
   readonly status: 'draft' | 'published';
+  readonly issuesCertificate: boolean;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 
@@ -101,6 +109,7 @@ export class Simulator {
     this.selectionStrategy = props.selectionStrategy;
     this.topicFilter = props.topicFilter ?? null;
     this.status = props.status;
+    this.issuesCertificate = props.issuesCertificate ?? true;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }

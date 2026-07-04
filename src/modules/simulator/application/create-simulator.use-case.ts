@@ -17,6 +17,8 @@ export interface CreateSimulatorInput {
   timeLimitMinutes: number;
   attemptLimit: number;
   topicFilter?: string[] | null;
+  /** Defaults to `true` when omitted (Slice S6 — see `Simulator` entity). */
+  issuesCertificate?: boolean;
 }
 
 /**
@@ -56,6 +58,7 @@ export class CreateSimulatorUseCase {
       selectionStrategy: 'random',
       topicFilter: input.topicFilter ?? null,
       status: 'draft',
+      issuesCertificate: input.issuesCertificate ?? true,
       createdAt: now,
       updatedAt: now,
     });

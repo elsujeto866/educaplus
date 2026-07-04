@@ -144,6 +144,13 @@ export const simulators = pgTable(
     /** Nullable — flat string[] of topics; null means no topic filter. */
     topicFilter: jsonb('topic_filter'),
     status: text('status', { enum: ['draft', 'published'] }).notNull().default('draft'),
+    /**
+     * Whether passing this simulator issues a certificate (Slice S6 —
+     * spec.md "Certificate on first pass (optional per simulator)"). Default
+     * `true` preserves the unconditional-issuance behavior every simulator
+     * created before this column existed already had.
+     */
+    issuesCertificate: boolean('issues_certificate').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

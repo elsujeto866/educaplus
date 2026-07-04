@@ -1,0 +1,1 @@
+ALTER TABLE "simulators" ADD COLUMN "issues_certificate" boolean DEFAULT true NOT NULL;

@@ -25,6 +25,7 @@ function toEntity(row: typeof simulators.$inferSelect): Simulator {
     selectionStrategy: row.selectionStrategy as SelectionStrategy,
     topicFilter: row.topicFilter as string[] | null,
     status: row.status,
+    issuesCertificate: row.issuesCertificate,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   });
@@ -53,6 +54,7 @@ export class DrizzleSimulatorRepository implements SimulatorRepository {
         selectionStrategy: simulator.selectionStrategy,
         topicFilter: simulator.topicFilter,
         status: simulator.status,
+        issuesCertificate: simulator.issuesCertificate,
         createdAt: simulator.createdAt,
         updatedAt: simulator.updatedAt,
       }),
@@ -102,6 +104,7 @@ export class DrizzleSimulatorRepository implements SimulatorRepository {
           selectionStrategy: simulator.selectionStrategy,
           topicFilter: simulator.topicFilter,
           status: simulator.status,
+          issuesCertificate: simulator.issuesCertificate,
           updatedAt: simulator.updatedAt,
         })
         .where(eq(simulators.id, simulator.id)),

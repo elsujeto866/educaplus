@@ -149,4 +149,28 @@ describe('Simulator entity', () => {
       expect(new Simulator(baseProps({ status: 'draft' })).isPublished).toBe(false);
     });
   });
+
+  describe('issuesCertificate (Slice S6)', () => {
+    it('defaults to true when omitted', () => {
+      const { issuesCertificate: _issuesCertificate, ...rest } = baseProps();
+      const sim = new Simulator(rest as SimulatorProps);
+      expect(sim.issuesCertificate).toBe(true);
+    });
+
+    it('accepts an explicit true value', () => {
+      const sim = new Simulator(baseProps({ issuesCertificate: true }));
+      expect(sim.issuesCertificate).toBe(true);
+    });
+
+    it('accepts an explicit false value', () => {
+      const sim = new Simulator(baseProps({ issuesCertificate: false }));
+      expect(sim.issuesCertificate).toBe(false);
+    });
+
+    it('is preserved through publish()/unpublish() transitions', () => {
+      const sim = new Simulator(baseProps({ issuesCertificate: false, status: 'draft' }));
+      expect(sim.publish().issuesCertificate).toBe(false);
+      expect(sim.unpublish().issuesCertificate).toBe(false);
+    });
+  });
 });

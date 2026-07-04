@@ -99,6 +99,42 @@ describe('simulators isolation — cross-tenant write blocked (WITH CHECK)', () 
 });
 
 // ---------------------------------------------------------------------------
+// issues_certificate column round-trip (Slice S6 — additive ALTER TABLE,
+// no new RLS needed: the existing tenant_isolation policy already covers
+// the new column, same as 0002_orange_shiver_man.sql's external_url).
+// ---------------------------------------------------------------------------
+
+describe('simulators — issues_certificate column round-trip (Slice S6)', () => {
+  it('defaults to true for the seeded simulator (created before the column existed)', async () => {
+    const rows = await asTenant(
+      'org_A',
+      (tx) =>
+        tx`SELECT issues_certificate FROM simulators WHERE id = 'a0000000-0000-0000-0000-00000000000d'`,
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.['issues_certificate']).toBe(true);
+  });
+
+  it('persists and reads back an explicit false value', async () => {
+    await asTenant(
+      'org_A',
+      (tx) => tx`
+        INSERT INTO simulators (id, academy_id, bank_id, title, question_count, time_limit_minutes, issues_certificate)
+        VALUES ('a0000000-0000-0000-0000-000000000f10', 'org_A', 'a0000000-0000-0000-0000-00000000000b', 'No-cert simulator', 5, 10, false)
+      `,
+    );
+
+    const rows = await asTenant(
+      'org_A',
+      (tx) =>
+        tx`SELECT issues_certificate FROM simulators WHERE id = 'a0000000-0000-0000-0000-000000000f10'`,
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.['issues_certificate']).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // FORCE RLS + tenant_isolation policy present (this is a NEW forced table)
 // ---------------------------------------------------------------------------
 

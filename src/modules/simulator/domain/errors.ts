@@ -158,3 +158,24 @@ export class SimulatorCertificateNotEarnedError extends Error {
     this.name = 'SimulatorCertificateNotEarnedError';
   }
 }
+
+// ---------------------------------------------------------------------------
+// Slice S6 — Per-simulator certificate toggle
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown by IssueSimulatorCertificateUseCase when the simulator is
+ * configured NOT to issue certificates (spec.md "Certificate on first pass
+ * (optional per simulator)"). Mirrors the throw-based "skipped outcome"
+ * convention already established by `SimulatorCertificateNotEarnedError` —
+ * the delivery layer catches both by `Error.name` and redirects away from
+ * the certificate route, never crashing. Checked AFTER the existing-
+ * certificate lookup so a certificate issued before the toggle was flipped
+ * off remains visible (immutability wins over a later config change).
+ */
+export class SimulatorCertificateNotConfiguredError extends Error {
+  constructor(simulatorId: string) {
+    super(`Simulator "${simulatorId}" is not configured to issue certificates`);
+    this.name = 'SimulatorCertificateNotConfiguredError';
+  }
+}

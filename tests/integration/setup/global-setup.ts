@@ -38,6 +38,10 @@
  *      exam-simulator-question-bank tables — question_banks, questions,
  *      simulators, simulator_attempts — plus the LOAD-BEARING manual GRANT +
  *      FORCE ROW LEVEL SECURITY tail per table, verified by the RLS suite).
+ *   6i. Apply drizzle migration 0009_simulator_issues_certificate.sql (adds
+ *      simulators.issues_certificate boolean NOT NULL DEFAULT true — Slice
+ *      S6. Single ALTER TABLE statement, no RLS change needed, same as
+ *      0002_orange_shiver_man.sql's external_url).
  *   10. Seed academies org_A / org_B and one membership each (superuser bypasses
  *      RLS here — FORCE RLS applies to the owner but NOT to superusers, so seeds
  *      flow through without tenant context).
@@ -269,6 +273,15 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     for (const stmt of stmts0008) {
       await sql.unsafe(stmt);
     }
+
+    // 6i. Apply 0009_simulator_issues_certificate.sql — single ALTER TABLE
+    //     ADD COLUMN, no RLS change needed (existing tenant_isolation policy
+    //     already covers the new column, same as 0002_orange_shiver_man.sql).
+    const raw0009 = readFileSync(
+      join(DRIZZLE_DIR, '0009_simulator_issues_certificate.sql'),
+      'utf-8',
+    );
+    await sql.unsafe(raw0009);
 
     // 7. Seed two academies and one membership each.
     //    Superuser bypasses RLS (FORCE RLS subjects owner but NOT superuser),
