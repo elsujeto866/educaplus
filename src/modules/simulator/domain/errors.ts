@@ -72,3 +72,63 @@ export class InsufficientQuestionPoolError extends Error {
     this.name = 'InsufficientQuestionPoolError';
   }
 }
+
+// ---------------------------------------------------------------------------
+// Slice S4 — Attempt-Taking
+// ---------------------------------------------------------------------------
+
+export class InvalidSimulatorAttemptError extends Error {
+  constructor(reason: string) {
+    super(`Invalid simulator attempt: ${reason}`);
+    this.name = 'InvalidSimulatorAttemptError';
+  }
+}
+
+/**
+ * Collapses "not found", "cross-tenant" (RLS-hidden), "still draft", AND
+ * "belongs to a different student" into ONE error across StartAttempt/
+ * SubmitAttempt/GetAttempt — never confirms existence of a resource the
+ * caller should not be able to see.
+ */
+export class SimulatorAttemptNotFoundError extends Error {
+  constructor(attemptId: string) {
+    super(`Simulator attempt "${attemptId}" does not exist or does not belong to the caller`);
+    this.name = 'SimulatorAttemptNotFoundError';
+  }
+}
+
+/**
+ * Thrown by StartAttemptUseCase (spec.md "Attempt limit exhausted") — the
+ * SERVER-SIDE gate, enforced BEFORE any new attempt row is created.
+ */
+export class AttemptLimitReachedError extends Error {
+  constructor(simulatorId: string, limit: number) {
+    super(`Simulator "${simulatorId}" attempt limit (${limit}) has already been reached`);
+    this.name = 'AttemptLimitReachedError';
+  }
+}
+
+/**
+ * Thrown by SubmitAttemptUseCase when the attempt is no longer 'in_progress'
+ * — enforces single-submission (spec.md abuse case: double-submit rejected).
+ */
+export class AttemptAlreadySubmittedError extends Error {
+  constructor(attemptId: string) {
+    super(`Simulator attempt "${attemptId}" has already been submitted and cannot be resubmitted`);
+    this.name = 'AttemptAlreadySubmittedError';
+  }
+}
+
+/**
+ * Thrown by SubmitAttemptUseCase's answer-validation gate
+ * (`assertPartialAnswersValid`) — an answer references a questionId/
+ * selectedOptionId that doesn't belong to this attempt's frozen snapshot,
+ * or the same questionId is answered more than once (blocks the same
+ * duplicate-answer scoring exploit `shared/kernel/scoring` guards against).
+ */
+export class InvalidAttemptAnswersError extends Error {
+  constructor(reason: string) {
+    super(`Invalid attempt answers: ${reason}`);
+    this.name = 'InvalidAttemptAnswersError';
+  }
+}
