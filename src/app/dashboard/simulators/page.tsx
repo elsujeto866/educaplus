@@ -9,19 +9,34 @@ import { CoursesNavLink } from '../courses/_lib/courses-nav-link';
 import { SimulatorsNavLink } from './_lib/simulators-nav-link';
 import { requireInstructor } from './_lib/require-instructor';
 
+// Inline literal union instead of importing `Simulator`'s status type from
+// the domain layer — `src/app` may not depend on `domain` directly
+// (eslint-boundaries). Same rationale as `courses/page.tsx`'s STATUS_LABEL.
+const STATUS_LABEL: Record<'draft' | 'published', string> = {
+  draft: 'Borrador',
+  published: 'Publicado',
+};
+
 /**
- * Question banks list — Server Component. Reads `ListBanksUseCase` through
- * `makeSimulatorComposition()` (delivery may only reach `application` via
- * `composition`, never directly). Role-gated: only admin/instructor reach
- * this route. Mirrors `courses/page.tsx`. Simulator RULES (the "simulacros"
- * students actually take) ship in Slice S3 — this route only manages the
- * reusable question pools that back them.
+ * Simulators home — Server Component. Reads `ListBanksUseCase` AND
+ * `ListSimulatorsUseCase` through `makeSimulatorComposition()` (delivery
+ * may only reach `application` via `composition`, never directly).
+ * Role-gated: only admin/instructor reach this route. Two sections mirror
+ * design Decision 9's "list banks+simulators": question banks (reusable
+ * pools, Slice S2) and simulators (the exam RULES students actually take,
+ * this slice) — each bank card links into a bank-scoped "Crear simulacro"
+ * flow (a simulator always binds to exactly one bank).
  */
 export default async function SimulatorsPage() {
   const ctx = await getTenantContext();
   requireInstructor(ctx);
 
-  const banks = await makeSimulatorComposition().listBanks.execute(ctx);
+  const composition = makeSimulatorComposition();
+  const [banks, simulators] = await Promise.all([
+    composition.listBanks.execute(ctx),
+    composition.listSimulators.execute(ctx),
+  ]);
+  const bankTitleById = new Map(banks.map((bank) => [bank.id, bank.title]));
 
   return (
     <AppShell
@@ -34,34 +49,76 @@ export default async function SimulatorsPage() {
       userSlot={<UserMenu />}
     >
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
-        <PageHeader title="Simulacros" subtitle="Gestioná los bancos de preguntas de tu academia." />
-        <Link
-          href="/dashboard/simulators/new"
-          className="rounded-lg border border-border bg-surface-elevated px-4 py-3 text-center text-sm font-medium text-primary transition-colors hover:bg-surface"
-        >
-          Crear banco de preguntas
-        </Link>
-        {banks.length === 0 ? (
-          <Card className="text-center text-sm text-muted-foreground">Todavía no tenés bancos de preguntas</Card>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {banks.map((bank) => (
-              <li key={bank.id}>
-                <Link
-                  href={`/dashboard/simulators/banks/${bank.id}`}
-                  className="block rounded-lg transition-colors hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                >
-                  <Card>
-                    <span className="font-medium text-foreground">{bank.title}</span>
+        <PageHeader title="Simulacros" subtitle="Gestioná los bancos de preguntas y simulacros de tu academia." />
+
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-foreground">Bancos de preguntas</h2>
+            <Link
+              href="/dashboard/simulators/new"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Crear banco
+            </Link>
+          </div>
+          {banks.length === 0 ? (
+            <Card className="text-center text-sm text-muted-foreground">Todavía no tenés bancos de preguntas</Card>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {banks.map((bank) => (
+                <li key={bank.id}>
+                  <Card className="flex flex-col gap-2">
+                    <Link
+                      href={`/dashboard/simulators/banks/${bank.id}`}
+                      className="font-medium text-foreground hover:underline"
+                    >
+                      {bank.title}
+                    </Link>
                     {bank.description ? (
-                      <p className="mt-1 text-sm text-muted-foreground">{bank.description}</p>
+                      <p className="text-sm text-muted-foreground">{bank.description}</p>
                     ) : null}
+                    <Link
+                      href={`/dashboard/simulators/banks/${bank.id}/simulators/new`}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      Crear simulacro desde este banco
+                    </Link>
                   </Card>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <h2 className="text-base font-semibold text-foreground">Simulacros</h2>
+          {simulators.length === 0 ? (
+            <Card className="text-center text-sm text-muted-foreground">Todavía no tenés simulacros</Card>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {simulators.map((simulator) => (
+                <li key={simulator.id}>
+                  <Link
+                    href={`/dashboard/simulators/${simulator.id}/edit`}
+                    className="block rounded-lg transition-colors hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  >
+                    <Card className="flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-foreground">{simulator.title}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {bankTitleById.get(simulator.bankId) ?? 'Banco desconocido'}
+                        </span>
+                      </div>
+                      <span className="rounded-full border border-border bg-surface-elevated px-3 py-1 text-xs font-medium uppercase tracking-wide text-primary">
+                        {STATUS_LABEL[simulator.status]}
+                      </span>
+                    </Card>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </AppShell>
   );

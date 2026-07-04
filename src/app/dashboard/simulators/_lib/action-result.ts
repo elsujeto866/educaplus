@@ -22,6 +22,11 @@ const DOMAIN_ERROR_MESSAGES: Record<string, string> = {
   // Not a domain error (thrown by `_lib/question-form.ts`'s parseOptionsPayload)
   // but name-matched here too, same rationale as course's InvalidQuizPayloadError.
   InvalidOptionsPayloadError: 'Las opciones de la pregunta tienen un formato inválido.',
+  // Slice S3 — simulator definition + catalog.
+  SimulatorNotFoundError: 'El simulacro no existe o no tenés acceso a él.',
+  InvalidSimulatorError: 'Los datos del simulacro no son válidos.',
+  InsufficientQuestionPoolError:
+    'El banco no tiene suficientes preguntas para publicar este simulacro con la configuración actual.',
 };
 
 /** Extracts the first Zod issue message, falling back to a generic one. */

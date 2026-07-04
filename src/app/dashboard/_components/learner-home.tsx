@@ -38,12 +38,20 @@ export async function LearnerHome({ ctx }: LearnerHomeProps) {
   return (
     <AppShell
       navSlot={
-        <Link
-          href="/dashboard/learn/courses"
-          className="text-sm font-medium text-foreground transition-colors hover:text-primary"
-        >
-          Catálogo
-        </Link>
+        <>
+          <Link
+            href="/dashboard/learn/courses"
+            className="text-sm font-medium text-foreground transition-colors hover:text-primary"
+          >
+            Catálogo
+          </Link>
+          <Link
+            href="/dashboard/learn/simulators"
+            className="text-sm font-medium text-foreground transition-colors hover:text-primary"
+          >
+            Simulacros
+          </Link>
+        </>
       }
       userSlot={<UserMenu />}
     >

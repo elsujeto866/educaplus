@@ -92,6 +92,27 @@ describe('toActionError', () => {
     });
   });
 
+  it('maps a domain SimulatorNotFoundError (matched by name) to a Spanish message', () => {
+    expect(toActionError(namedError('SimulatorNotFoundError'))).toEqual({
+      ok: false,
+      error: 'El simulacro no existe o no tenés acceso a él.',
+    });
+  });
+
+  it('maps a domain InvalidSimulatorError (matched by name) to a Spanish message', () => {
+    expect(toActionError(namedError('InvalidSimulatorError'))).toEqual({
+      ok: false,
+      error: 'Los datos del simulacro no son válidos.',
+    });
+  });
+
+  it('maps a domain InsufficientQuestionPoolError (matched by name) to a Spanish message', () => {
+    expect(toActionError(namedError('InsufficientQuestionPoolError'))).toEqual({
+      ok: false,
+      error: 'El banco no tiene suficientes preguntas para publicar este simulacro con la configuración actual.',
+    });
+  });
+
   it('falls back to a generic Spanish message for unrecognized errors', () => {
     expect(toActionError(namedError('SomeUnknownError'))).toEqual({
       ok: false,
