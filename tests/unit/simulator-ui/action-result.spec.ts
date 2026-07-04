@@ -113,6 +113,34 @@ describe('toActionError', () => {
     });
   });
 
+  it('maps a domain AttemptLimitReachedError (matched by name) to a Spanish message', () => {
+    expect(toActionError(namedError('AttemptLimitReachedError'))).toEqual({
+      ok: false,
+      error: 'Ya alcanzaste el límite de intentos permitidos para este simulacro.',
+    });
+  });
+
+  it('maps a domain SimulatorAttemptNotFoundError (matched by name) to a Spanish message', () => {
+    expect(toActionError(namedError('SimulatorAttemptNotFoundError'))).toEqual({
+      ok: false,
+      error: 'El intento no existe o no tenés acceso a él.',
+    });
+  });
+
+  it('maps a domain AttemptAlreadySubmittedError (matched by name) to a Spanish message', () => {
+    expect(toActionError(namedError('AttemptAlreadySubmittedError'))).toEqual({
+      ok: false,
+      error: 'Este intento ya fue entregado y no se puede volver a enviar.',
+    });
+  });
+
+  it('maps a domain InvalidAttemptAnswersError (matched by name) to a Spanish message', () => {
+    expect(toActionError(namedError('InvalidAttemptAnswersError'))).toEqual({
+      ok: false,
+      error: 'Las respuestas enviadas no son válidas para este intento.',
+    });
+  });
+
   it('falls back to a generic Spanish message for unrecognized errors', () => {
     expect(toActionError(namedError('SomeUnknownError'))).toEqual({
       ok: false,

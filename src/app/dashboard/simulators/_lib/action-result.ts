@@ -27,6 +27,11 @@ const DOMAIN_ERROR_MESSAGES: Record<string, string> = {
   InvalidSimulatorError: 'Los datos del simulacro no son válidos.',
   InsufficientQuestionPoolError:
     'El banco no tiene suficientes preguntas para publicar este simulacro con la configuración actual.',
+  // Slice S4 — attempt-taking.
+  AttemptLimitReachedError: 'Ya alcanzaste el límite de intentos permitidos para este simulacro.',
+  SimulatorAttemptNotFoundError: 'El intento no existe o no tenés acceso a él.',
+  AttemptAlreadySubmittedError: 'Este intento ya fue entregado y no se puede volver a enviar.',
+  InvalidAttemptAnswersError: 'Las respuestas enviadas no son válidas para este intento.',
 };
 
 /** Extracts the first Zod issue message, falling back to a generic one. */

@@ -6,6 +6,7 @@ import { AppShell } from '@/shared/ui/organisms/app-shell';
 import { PageHeader } from '@/shared/ui/molecules/page-header';
 import { Card } from '@/shared/ui/atoms/card';
 import { UserMenu } from '../../../_components/user-menu';
+import { StartAttemptButton } from './_components/start-attempt-button';
 
 interface SimulatorDetailPageProps {
   params: Promise<{ simulatorId: string }>;
@@ -16,11 +17,14 @@ interface SimulatorDetailPageProps {
  * `GetPublishedSimulatorUseCase` (returns `null` for a nonexistent,
  * cross-tenant, OR still-draft simulator — spec.md "Unpublished stays
  * hidden" — so `notFound()` also covers the "student guesses a draft id"
- * case with zero content leak). Shows the simulator's RULES only —
- * question count, time limit, passing score, attempt limit. The
- * start-attempt CTA and attempt history/remaining-count ship in Slice S4
- * (StartAttemptUseCase does not exist yet); this page is informational
- * only for now, matching this slice's scope.
+ * case with zero content leak). Shows the simulator's RULES plus a
+ * "Comenzar simulacro" CTA (Slice S4) — `StartAttemptButton` triggers
+ * `startAttemptAction`, which enforces the attempt-limit SERVER-SIDE
+ * (spec.md "Attempt limit exhausted") and either resumes an existing
+ * in_progress attempt or freezes a new one, then redirects to the timed
+ * exam page. Attempt history/remaining-count display remains deferred
+ * (design Decision 9 lists it as a future enhancement, not required by
+ * any spec scenario in this slice).
  */
 export default async function SimulatorDetailPage({ params }: SimulatorDetailPageProps) {
   const { simulatorId } = await params;
@@ -61,6 +65,7 @@ export default async function SimulatorDetailPage({ params }: SimulatorDetailPag
             <span className="font-medium text-foreground">{simulator.attemptLimit}</span>
           </div>
         </Card>
+        <StartAttemptButton simulatorId={simulator.id} />
       </div>
     </AppShell>
   );
