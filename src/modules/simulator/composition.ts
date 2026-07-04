@@ -2,6 +2,7 @@ import { DrizzleQuestionBankRepository } from './infrastructure/drizzle-question
 import { DrizzleQuestionRepository } from './infrastructure/drizzle-question.repository';
 import { DrizzleSimulatorRepository } from './infrastructure/drizzle-simulator.repository';
 import { DrizzleSimulatorAttemptRepository } from './infrastructure/drizzle-simulator-attempt.repository';
+import { DrizzleSimulatorCertificateRepository } from './infrastructure/drizzle-simulator-certificate.repository';
 import { CryptoRandomAdapter } from './infrastructure/crypto-random.adapter';
 import { CreateBankUseCase } from './application/create-bank.use-case';
 import { UpdateBankUseCase } from './application/update-bank.use-case';
@@ -23,6 +24,7 @@ import { GetPublishedSimulatorUseCase } from './application/get-published-simula
 import { StartAttemptUseCase } from './application/start-attempt.use-case';
 import { SubmitAttemptUseCase } from './application/submit-attempt.use-case';
 import { GetAttemptUseCase } from './application/get-attempt.use-case';
+import { IssueSimulatorCertificateUseCase } from './application/issue-simulator-certificate.use-case';
 
 export interface SimulatorComposition {
   createBank: CreateBankUseCase;
@@ -44,6 +46,7 @@ export interface SimulatorComposition {
   startAttempt: StartAttemptUseCase;
   submitAttempt: SubmitAttemptUseCase;
   getAttempt: GetAttemptUseCase;
+  issueSimulatorCertificate: IssueSimulatorCertificateUseCase;
 }
 
 /**
@@ -59,6 +62,7 @@ export function makeSimulatorComposition(): SimulatorComposition {
   const questionRepo = new DrizzleQuestionRepository();
   const simulatorRepo = new DrizzleSimulatorRepository();
   const attemptRepo = new DrizzleSimulatorAttemptRepository();
+  const certificateRepo = new DrizzleSimulatorCertificateRepository();
   const rng = new CryptoRandomAdapter();
 
   return {
@@ -81,5 +85,6 @@ export function makeSimulatorComposition(): SimulatorComposition {
     startAttempt: new StartAttemptUseCase(simulatorRepo, questionRepo, attemptRepo, rng),
     submitAttempt: new SubmitAttemptUseCase(attemptRepo, simulatorRepo),
     getAttempt: new GetAttemptUseCase(attemptRepo, simulatorRepo),
+    issueSimulatorCertificate: new IssueSimulatorCertificateUseCase(attemptRepo, certificateRepo),
   };
 }

@@ -48,6 +48,8 @@
  *   13. Seed one question_bank → question → simulator → simulator_attempt
  *      chain per org so the 4 new isolation specs have rows on both sides to
  *      compare against.
+ *   14. Seed one simulator_certificate per org (Slice S5) so
+ *      simulator-certificates-isolation.spec.ts has rows on both sides.
  *
  * Returns a teardown function (no-op — the container is torn down externally).
  */
@@ -97,6 +99,9 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     //    first so it never blocks a later CASCADE from courses/academies.
     //    simulator_attempts → simulators → questions → question_banks must
     //    drop in that child-first order, before academies.
+    //    simulator_certificates references simulators + academies (no
+    //    children) — drop first so it never blocks a later CASCADE.
+    await sql.unsafe('DROP TABLE IF EXISTS simulator_certificates CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS simulator_attempts CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS simulators CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS questions CASCADE');
@@ -248,6 +253,20 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       .filter(Boolean);
 
     for (const stmt of stmts0007) {
+      await sql.unsafe(stmt);
+    }
+
+    // 6h. Apply 0008_simulator_certificates.sql — creates simulator_certificates
+    //     (fresh CREATE TABLE + ENABLE RLS + policy) plus the LOAD-BEARING
+    //     manual GRANT + FORCE ROW LEVEL SECURITY tail (drizzle-kit never
+    //     emits FORCE/GRANT — this is a NEW forced table, not a re-assert).
+    const raw0008 = readFileSync(join(DRIZZLE_DIR, '0008_simulator_certificates.sql'), 'utf-8');
+    const stmts0008 = raw0008
+      .split('--> statement-breakpoint')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    for (const stmt of stmts0008) {
       await sql.unsafe(stmt);
     }
 
@@ -518,6 +537,20 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
         now() + interval '30 minutes',
         now()
       )
+      ON CONFLICT (id) DO NOTHING
+    `;
+
+    // 14. Seed one simulator_certificate per org (Slice S5), keyed to the
+    //     simulator seeded above (a...00d / b...00d). Rows exist purely for
+    //     RLS isolation assertions.
+    await sql`
+      INSERT INTO simulator_certificates (id, simulator_id, academy_id, clerk_user_id, certificate_code, score, student_name, simulator_title, academy_name)
+      VALUES ('a0000000-0000-0000-0000-00000000000f', 'a0000000-0000-0000-0000-00000000000d', 'org_A', 'user_A1', 'CERT-2026-SIMAAAA1', 100, 'Student A1', 'Simulator A1', 'Academy A')
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO simulator_certificates (id, simulator_id, academy_id, clerk_user_id, certificate_code, score, student_name, simulator_title, academy_name)
+      VALUES ('b0000000-0000-0000-0000-00000000000f', 'b0000000-0000-0000-0000-00000000000d', 'org_B', 'user_B1', 'CERT-2026-SIMBBBB1', 100, 'Student B1', 'Simulator B1', 'Academy B')
       ON CONFLICT (id) DO NOTHING
     `;
   } finally {

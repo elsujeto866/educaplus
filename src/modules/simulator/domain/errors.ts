@@ -132,3 +132,29 @@ export class InvalidAttemptAnswersError extends Error {
     this.name = 'InvalidAttemptAnswersError';
   }
 }
+
+// ---------------------------------------------------------------------------
+// Slice S5 — Certificate
+// ---------------------------------------------------------------------------
+
+export class InvalidSimulatorCertificateError extends Error {
+  constructor(reason: string) {
+    super(`Invalid simulator certificate: ${reason}`);
+    this.name = 'InvalidSimulatorCertificateError';
+  }
+}
+
+/**
+ * Thrown by IssueSimulatorCertificateUseCase (mirrors course's
+ * CertificateNotEarnedError) when the caller has never posted a passing
+ * attempt for this simulator — defense-in-depth pass-gate, on top of the
+ * page-level flow that should never reach this use-case without a pass.
+ */
+export class SimulatorCertificateNotEarnedError extends Error {
+  constructor(simulatorId: string, clerkUserId: string) {
+    super(
+      `User "${clerkUserId}" has not passed simulator "${simulatorId}" — no certificate can be issued`,
+    );
+    this.name = 'SimulatorCertificateNotEarnedError';
+  }
+}

@@ -159,6 +159,7 @@ function makeAttemptRepo(overrides: Partial<SimulatorAttemptRepository> = {}): S
         attempt: candidate,
       })),
     update: vi.fn().mockResolvedValue(undefined),
+    findLatestPassed: vi.fn().mockResolvedValue(null),
     ...overrides,
   };
 }

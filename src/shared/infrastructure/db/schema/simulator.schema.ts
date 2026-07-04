@@ -39,6 +39,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
 } from 'drizzle-orm/pg-core';
 
@@ -200,6 +201,55 @@ export const simulatorAttempts = pgTable(
   },
   (t) => [
     index('simulator_attempts_academy_simulator_user_idx').on(
+      t.academyId,
+      t.simulatorId,
+      t.clerkUserId,
+    ),
+    pgPolicy('tenant_isolation', {
+      for: 'all',
+      to: 'app_user',
+      using: sql`${t.academyId} = current_setting('app.current_tenant_id', true)`,
+      withCheck: sql`${t.academyId} = current_setting('app.current_tenant_id', true)`,
+    }),
+  ],
+).enableRLS();
+
+// ---------------------------------------------------------------------------
+// simulator_certificates — one immutable proof-of-pass row per (simulator,
+// user), Slice S5. Issued lazily by IssueSimulatorCertificateUseCase once
+// the caller has a passing attempt; never updated after creation
+// (first-pass wins). Mirrors `certificates` (course.schema.ts) verbatim.
+// ---------------------------------------------------------------------------
+
+export const simulatorCertificates = pgTable(
+  'simulator_certificates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    simulatorId: uuid('simulator_id')
+      .notNull()
+      .references(() => simulators.id, { onDelete: 'cascade' }),
+    /** Tenant discriminator — duplicated for RLS policy without a JOIN. */
+    academyId: text('academy_id')
+      .notNull()
+      .references(() => academies.id, { onDelete: 'cascade' }),
+    /** Opaque Clerk user identifier (not a FK — Clerk is external). */
+    clerkUserId: text('clerk_user_id').notNull(),
+    /** Deterministic, human-readable code — see shared/kernel/certificate-code.ts. */
+    certificateCode: text('certificate_code').notNull(),
+    /** Percentage score (0-100, integer) snapshotted from the passing attempt. */
+    score: integer('score').notNull(),
+    /** Snapshot of the learner's display name at issuance time. */
+    studentName: text('student_name').notNull(),
+    /** Snapshot of the simulator title at issuance time. */
+    simulatorTitle: text('simulator_title').notNull(),
+    /** Snapshot of the academy name at issuance time. */
+    academyName: text('academy_name').notNull(),
+    issuedAt: timestamp('issued_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique().on(t.simulatorId, t.clerkUserId),
+    unique().on(t.academyId, t.certificateCode),
+    index('simulator_certificates_academy_simulator_user_idx').on(
       t.academyId,
       t.simulatorId,
       t.clerkUserId,

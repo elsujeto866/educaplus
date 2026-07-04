@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { withTenant, type TenantTx } from '@/shared/infrastructure/db/with-tenant';
 import { simulatorAttempts } from '@/shared/infrastructure/db/schema/simulator.schema';
 import type { TenantContext } from '@/shared/kernel/tenant-context';
@@ -149,6 +149,34 @@ export class DrizzleSimulatorAttemptRepository implements SimulatorAttemptReposi
 
       await tx.insert(simulatorAttempts).values(toInsertValues(candidate));
       return { kind: 'created', attempt: candidate };
+    });
+  }
+
+  /**
+   * Backs `IssueSimulatorCertificateUseCase`'s pass-gate (Slice S5) —
+   * mirrors `DrizzleAssessmentAttemptRepository.findLatestPassed`. Only
+   * finished attempts ever have `passed = true`, so the filter naturally
+   * excludes in-progress rows without needing an explicit status check.
+   */
+  async findLatestPassed(
+    ctx: TenantContext,
+    simulatorId: string,
+    clerkUserId: string,
+  ): Promise<SimulatorAttempt | null> {
+    return withTenant(ctx, async (tx) => {
+      const rows = await tx
+        .select()
+        .from(simulatorAttempts)
+        .where(
+          and(
+            eq(simulatorAttempts.simulatorId, simulatorId),
+            eq(simulatorAttempts.clerkUserId, clerkUserId),
+            eq(simulatorAttempts.passed, true),
+          ),
+        )
+        .orderBy(desc(simulatorAttempts.createdAt))
+        .limit(1);
+      return rows[0] ? toEntity(rows[0]) : null;
     });
   }
 

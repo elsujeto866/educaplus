@@ -61,4 +61,19 @@ export interface SimulatorAttemptRepository {
 
   /** Persists a status transition (submit/expire) — answers/score/passed/submittedAt. */
   update(ctx: TenantContext, attempt: SimulatorAttempt): Promise<void>;
+
+  /**
+   * The most recent PASSED attempt for (simulatorId, clerkUserId), or null
+   * if the caller has never passed this simulator. Backs
+   * `IssueSimulatorCertificateUseCase`'s pass-gate (Slice S5) — mirrors
+   * `AssessmentAttemptRepository.findLatestPassed` from `modules/course`.
+   * Only finished attempts (`status` 'submitted'/'expired') ever have
+   * `passed === true`; an in_progress attempt's `passed` is always null and
+   * is naturally excluded by the `passed = true` filter.
+   */
+  findLatestPassed(
+    ctx: TenantContext,
+    simulatorId: string,
+    clerkUserId: string,
+  ): Promise<SimulatorAttempt | null>;
 }

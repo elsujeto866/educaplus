@@ -57,6 +57,13 @@
       "when": 1783120063201,
       "tag": "0007_simulator_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783143119952,
+      "tag": "0008_simulator_certificates",
+      "breakpoints": true
     }
   ]
 }
