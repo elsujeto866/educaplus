@@ -42,3 +42,33 @@ export class QuestionNotFoundError extends Error {
     this.name = 'QuestionNotFoundError';
   }
 }
+
+export class InvalidSimulatorError extends Error {
+  constructor(reason: string) {
+    super(`Invalid simulator: ${reason}`);
+    this.name = 'InvalidSimulatorError';
+  }
+}
+
+export class SimulatorNotFoundError extends Error {
+  constructor(simulatorId: string) {
+    super(`Simulator "${simulatorId}" does not exist or does not belong to the caller's academy`);
+    this.name = 'SimulatorNotFoundError';
+  }
+}
+
+/**
+ * Thrown by PublishSimulatorUseCase (spec.md "Bank has fewer questions than
+ * required") when the bank's matching pool (after topicFilter) is smaller
+ * than the simulator's requested questionCount. Publish-time is the gate —
+ * the selection engine itself stays defensively tolerant (use-all, no
+ * error) for the case where a bank shrinks again after publish.
+ */
+export class InsufficientQuestionPoolError extends Error {
+  constructor(simulatorId: string, poolSize: number, requiredCount: number) {
+    super(
+      `Simulator "${simulatorId}" requires ${requiredCount} question(s) but its bank only has ${poolSize} matching question(s)`,
+    );
+    this.name = 'InsufficientQuestionPoolError';
+  }
+}
