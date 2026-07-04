@@ -8,6 +8,16 @@
  * rounding, empty-quiz, unknown ids).
  *
  * Pure TS — zero infrastructure imports.
+ *
+ * DELIBERATE TEMPORARY DUPLICATION (exam-simulator-question-bank, slice S1b):
+ * `src/shared/kernel/scoring.ts` now hosts a generalized, structurally-typed
+ * version of this exact algorithm (`ScorableQuiz` shape) so `modules/simulator`
+ * can reuse it without a cross-module domain import (disallowed by the
+ * boundaries ESLint rule). This file is intentionally left untouched to keep
+ * "zero changes to the shipped course-quiz stack" true under strict TDD.
+ * Follow-up hygiene task (not this change): re-point Assessment/AssessmentAttempt
+ * to call `shared/kernel/scoring` directly and delete this duplicate, guarded
+ * by this module's existing unit + RLS tests.
  */
 
 import type { Assessment } from '../assessment.entity';

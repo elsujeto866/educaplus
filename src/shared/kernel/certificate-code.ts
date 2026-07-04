@@ -1,6 +1,11 @@
 /**
- * certificate-code.service — pure derivation of a human-readable certificate
- * code from a certificate id and its issuance timestamp.
+ * certificate-code — pure derivation of a human-readable certificate code
+ * from a certificate id and its issuance timestamp.
+ *
+ * Verbatim port of `modules/course/domain/services/certificate-code.service.ts`
+ * into `shared/kernel` so `modules/simulator` can reuse it without a
+ * cross-module domain import (disallowed by the boundaries ESLint rule).
+ * Zero deps — safe to import from any `domain` layer.
  *
  * Deterministic and side-effect-free: the same (id, issuedAt) pair always
  * produces the same code, which is what makes it unit-testable and safe to
@@ -11,14 +16,7 @@
  * Format: CERT-{issuedAt.getUTCFullYear()}-{first 8 hex chars of the id,
  * dashes stripped, uppercased}.
  *
- * Pure TS — zero infrastructure imports.
- *
- * DELIBERATE TEMPORARY DUPLICATION (exam-simulator-question-bank, slice S1b):
- * `src/shared/kernel/certificate-code.ts` is a verbatim port of this function
- * so `modules/simulator` can reuse it without a cross-module domain import.
- * Left untouched here to keep this change's course-quiz stack unchanged.
- * Follow-up hygiene task (not this change): re-point `issue-certificate.use-case.ts`
- * to `shared/kernel/certificate-code` and delete this duplicate.
+ * Pure TS — zero imports.
  */
 export function formatCertificateCode(id: string, issuedAt: Date): string {
   const year = issuedAt.getUTCFullYear();

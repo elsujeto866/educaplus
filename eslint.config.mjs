@@ -60,11 +60,16 @@ const eslintConfig = defineConfig([
           default: 'disallow',
           rules: [
             // domain: pure TS — no external layers. Intra-domain imports allowed (entities, value
-            // objects, ports all live here). Cross-module domain isolation enforced via code review
-            // until a second module exists and capture-group selectors are warranted.
-            { from: 'domain', allow: ['domain', 'shared-kernel'] },
+            // objects, ports all live here), but ONLY within the same module: the `domain`/
+            // `application` element types already capture `module` (see settings above); we
+            // reference that capture (`${from.module}`) on the `to` side so a second module's
+            // domain (e.g. modules/simulator) cannot import another module's domain
+            // (e.g. modules/course) — that isolation was previously only enforced by code review.
+            { from: [['domain', { module: '${from.module}' }]],
+              allow: [['domain', { module: '${from.module}' }], 'shared-kernel'] },
             // application: own domain only — no infra, no framework
-            { from: 'application', allow: ['domain', 'shared-kernel'] },
+            { from: [['application', { module: '${from.module}' }]],
+              allow: [['domain', { module: '${from.module}' }], 'shared-kernel'] },
             // infrastructure: implements ports; may read shared config + lib + kernel.
             // Also allowed to import shared-infra (e.g. module repos using the shared db client).
             { from: 'infrastructure', allow: ['domain', 'shared-kernel', 'shared-infra', 'shared-config', 'shared-lib'] },
