@@ -21,9 +21,12 @@
  * `simulator_track_progress` table via the SAME `app_user` role used in
  * production.
  *
- * Seeds its own track + progress row (independent from global-setup's
- * org_A track/progress and the reorder spec's track) so this file can
- * freely mutate/re-seed without interfering with
+ * Seeds its own track + progress row (fresh fixture range
+ * a0000000-...-000050 through ...-000054 — global-setup uses ...-000010
+ * through ...-000012, the reorder spec uses ...-000020 through ...-000028,
+ * the step-remove spec uses ...-000030 through ...-000038, and the
+ * monotonic-upsert spec uses ...-000040 through ...-000048) so this file can
+ * freely mutate/re-seed without interfering with any of them, including
  * `simulator-track-progress-isolation.spec.ts`.
  */
 
@@ -31,12 +34,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { asTenant, closeAll, superuserClient } from '../db/test-client';
 
 // Dedicated, unlikely-to-collide fixture IDs — org_A tenant only.
+// Range 050-054: reorder spec uses 020-028, step-remove spec uses 030-038,
+// monotonic-upsert spec uses 040-048 — this file must NOT reuse any of
+// those, since Vitest runs spec files concurrently against the SAME Docker
+// Postgres instance and colliding primary keys race across files.
 const BANK_ID = 'a0000000-0000-0000-0000-00000000000b'; // seeded by global-setup
-const TRACK_ID = 'a0000000-0000-0000-0000-000000000030';
-const SIM_1 = 'a0000000-0000-0000-0000-000000000031';
-const STEP_1 = 'a0000000-0000-0000-0000-000000000032';
-const PROGRESS_1 = 'a0000000-0000-0000-0000-000000000033';
-const PROGRESS_RACED = 'a0000000-0000-0000-0000-000000000034';
+const TRACK_ID = 'a0000000-0000-0000-0000-000000000050';
+const SIM_1 = 'a0000000-0000-0000-0000-000000000051';
+const STEP_1 = 'a0000000-0000-0000-0000-000000000052';
+const PROGRESS_1 = 'a0000000-0000-0000-0000-000000000053';
+const PROGRESS_RACED = 'a0000000-0000-0000-0000-000000000054';
 const LEARNER = 'user_race_1';
 
 async function seedTrackAndStep(): Promise<void> {

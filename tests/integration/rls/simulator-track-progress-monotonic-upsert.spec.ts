@@ -28,11 +28,11 @@
  * production.
  *
  * Seeds its own track + progress rows (fresh fixture range
- * a0000000-...-000040 through ...-000048 — the existing progress-race spec
- * uses ...-000030 through ...-000034, the reorder spec uses ...-000020
- * through ...-000028, and global-setup uses ...-000010 through ...-000012)
- * so this file can freely mutate/re-seed without interfering with any of
- * them.
+ * a0000000-...-000040 through ...-000048 — the reorder spec uses ...-000020
+ * through ...-000028, the step-remove spec uses ...-000030 through
+ * ...-000038, the progress-race spec uses ...-000050 through ...-000054,
+ * and global-setup uses ...-000010 through ...-000012) so this file can
+ * freely mutate/re-seed without interfering with any of them.
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
