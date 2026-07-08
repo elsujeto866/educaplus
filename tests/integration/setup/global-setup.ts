@@ -54,6 +54,14 @@
  *      compare against.
  *   14. Seed one simulator_certificate per org (Slice S5) so
  *      simulator-certificates-isolation.spec.ts has rows on both sides.
+ *   6j. Apply drizzle migration 0010_simulator_tracks_rls.sql (creates the 3
+ *      gamified-simulators Phase 1 tables — simulator_tracks,
+ *      simulator_track_steps, simulator_track_progress — plus the
+ *      LOAD-BEARING manual GRANT + FORCE ROW LEVEL SECURITY tail per table,
+ *      verified by the RLS suite).
+ *   15. Seed one simulator_track → simulator_track_step →
+ *      simulator_track_progress chain per org so the 3 new isolation specs
+ *      have rows on both sides to compare against.
  *
  * Returns a teardown function (no-op — the container is torn down externally).
  */
@@ -105,6 +113,12 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     //    drop in that child-first order, before academies.
     //    simulator_certificates references simulators + academies (no
     //    children) — drop first so it never blocks a later CASCADE.
+    //    simulator_track_progress / simulator_track_steps reference
+    //    simulator_tracks (and, for steps, simulators) — drop both before
+    //    simulators/simulator_tracks.
+    await sql.unsafe('DROP TABLE IF EXISTS simulator_track_progress CASCADE');
+    await sql.unsafe('DROP TABLE IF EXISTS simulator_track_steps CASCADE');
+    await sql.unsafe('DROP TABLE IF EXISTS simulator_tracks CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS simulator_certificates CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS simulator_attempts CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS simulators CASCADE');
@@ -282,6 +296,21 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       'utf-8',
     );
     await sql.unsafe(raw0009);
+
+    // 6j. Apply 0010_simulator_tracks_rls.sql — creates the 3
+    //     gamified-simulators Phase 1 tables (fresh CREATE TABLE + ENABLE RLS
+    //     + policy per table) plus the LOAD-BEARING manual GRANT + FORCE ROW
+    //     LEVEL SECURITY tail per table (drizzle-kit never emits FORCE/GRANT
+    //     — these are NEW forced tables, not a re-assert).
+    const raw0010 = readFileSync(join(DRIZZLE_DIR, '0010_simulator_tracks_rls.sql'), 'utf-8');
+    const stmts0010 = raw0010
+      .split('--> statement-breakpoint')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    for (const stmt of stmts0010) {
+      await sql.unsafe(stmt);
+    }
 
     // 7. Seed two academies and one membership each.
     //    Superuser bypasses RLS (FORCE RLS subjects owner but NOT superuser),
@@ -564,6 +593,71 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     await sql`
       INSERT INTO simulator_certificates (id, simulator_id, academy_id, clerk_user_id, certificate_code, score, student_name, simulator_title, academy_name)
       VALUES ('b0000000-0000-0000-0000-00000000000f', 'b0000000-0000-0000-0000-00000000000d', 'org_B', 'user_B1', 'CERT-2026-SIMBBBB1', 100, 'Student B1', 'Simulator B1', 'Academy B')
+      ON CONFLICT (id) DO NOTHING
+    `;
+
+    // 15. Seed one simulator_track → simulator_track_step →
+    //     simulator_track_progress chain per org (gamified-simulators Phase 1)
+    //     so the 3 new isolation specs have rows on both sides to compare
+    //     against. The step reuses the simulator seeded above (a...00d / b...00d).
+
+    // simulator_tracks
+    await sql`
+      INSERT INTO simulator_tracks (id, academy_id, title, status)
+      VALUES ('a0000000-0000-0000-0000-000000000010', 'org_A', 'Track A1', 'published')
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO simulator_tracks (id, academy_id, title, status)
+      VALUES ('b0000000-0000-0000-0000-000000000010', 'org_B', 'Track B1', 'published')
+      ON CONFLICT (id) DO NOTHING
+    `;
+
+    // simulator_track_steps
+    await sql`
+      INSERT INTO simulator_track_steps (id, track_id, academy_id, simulator_id, position)
+      VALUES (
+        'a0000000-0000-0000-0000-000000000011',
+        'a0000000-0000-0000-0000-000000000010',
+        'org_A',
+        'a0000000-0000-0000-0000-00000000000d',
+        1
+      )
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO simulator_track_steps (id, track_id, academy_id, simulator_id, position)
+      VALUES (
+        'b0000000-0000-0000-0000-000000000011',
+        'b0000000-0000-0000-0000-000000000010',
+        'org_B',
+        'b0000000-0000-0000-0000-00000000000d',
+        1
+      )
+      ON CONFLICT (id) DO NOTHING
+    `;
+
+    // simulator_track_progress — frontier 1 (step 1 open by default) per org.
+    await sql`
+      INSERT INTO simulator_track_progress (id, track_id, academy_id, clerk_user_id, highest_unlocked_position)
+      VALUES (
+        'a0000000-0000-0000-0000-000000000012',
+        'a0000000-0000-0000-0000-000000000010',
+        'org_A',
+        'user_A1',
+        1
+      )
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO simulator_track_progress (id, track_id, academy_id, clerk_user_id, highest_unlocked_position)
+      VALUES (
+        'b0000000-0000-0000-0000-000000000012',
+        'b0000000-0000-0000-0000-000000000010',
+        'org_B',
+        'user_B1',
+        1
+      )
       ON CONFLICT (id) DO NOTHING
     `;
   } finally {

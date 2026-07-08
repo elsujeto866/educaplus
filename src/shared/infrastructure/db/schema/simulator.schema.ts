@@ -1,6 +1,8 @@
 /**
  * Simulator schema — 4 tenant-scoped tables with deny-by-default RLS,
- * introduced for the exam-simulator-question-bank change (Slice S1a).
+ * introduced for the exam-simulator-question-bank change (Slice S1a), plus
+ * 3 additive tables for gamified simulator tracks (`gamified-simulators`
+ * change, Phase 1 — see sdd/gamified-simulators/design).
  *
  * Every table carries:
  *   - academy_id FK → academies (cascade delete) — the RLS discriminator,
@@ -27,6 +29,15 @@
  * exposed to the browser while an attempt is in_progress MUST strip
  * correctOptionId before leaving the server (enforced in a later slice's
  * view-model, not at the schema level).
+ *
+ * simulator_tracks — an academy-scoped ordered ladder of existing published
+ *   simulators (additive delta, gamified-simulators Phase 1).
+ * simulator_track_steps — one row per (track, simulator), position is a
+ *   contiguous 1..N sequence per track; simulatorId is GLOBALLY unique
+ *   across all tracks (a simulator belongs to at most one track).
+ * simulator_track_progress — one row per (track, learner); a single
+ *   monotonic frontier integer (`highestUnlockedPosition`) fully derives
+ *   locked/unlocked/passed status for every step (see design.md).
  */
 
 import { sql } from 'drizzle-orm';
@@ -259,6 +270,118 @@ export const simulatorCertificates = pgTable(
     index('simulator_certificates_academy_simulator_user_idx').on(
       t.academyId,
       t.simulatorId,
+      t.clerkUserId,
+    ),
+    pgPolicy('tenant_isolation', {
+      for: 'all',
+      to: 'app_user',
+      using: sql`${t.academyId} = current_setting('app.current_tenant_id', true)`,
+      withCheck: sql`${t.academyId} = current_setting('app.current_tenant_id', true)`,
+    }),
+  ],
+).enableRLS();
+
+// ---------------------------------------------------------------------------
+// simulator_tracks — academy-scoped ordered ladder of existing published
+// simulators (gamified-simulators change, Phase 1, additive delta).
+// ---------------------------------------------------------------------------
+
+export const simulatorTracks = pgTable(
+  'simulator_tracks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Tenant discriminator — RLS policy key. */
+    academyId: text('academy_id')
+      .notNull()
+      .references(() => academies.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    description: text('description'),
+    status: text('status', { enum: ['draft', 'published'] }).notNull().default('draft'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('simulator_tracks_academy_id_status_idx').on(t.academyId, t.status),
+    pgPolicy('tenant_isolation', {
+      for: 'all',
+      to: 'app_user',
+      using: sql`${t.academyId} = current_setting('app.current_tenant_id', true)`,
+      withCheck: sql`${t.academyId} = current_setting('app.current_tenant_id', true)`,
+    }),
+  ],
+).enableRLS();
+
+// ---------------------------------------------------------------------------
+// simulator_track_steps — one row per (track, simulator). `position` is a
+// contiguous 1..N sequence per track (enforced at the use-case level via
+// reorder/remove re-compaction); `simulatorId` is GLOBALLY unique across all
+// tracks — a simulator belongs to at most one track (design.md, fixed
+// decision).
+// ---------------------------------------------------------------------------
+
+export const simulatorTrackSteps = pgTable(
+  'simulator_track_steps',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    trackId: uuid('track_id')
+      .notNull()
+      .references(() => simulatorTracks.id, { onDelete: 'cascade' }),
+    /** Tenant discriminator — duplicated for RLS policy without a JOIN. */
+    academyId: text('academy_id')
+      .notNull()
+      .references(() => academies.id, { onDelete: 'cascade' }),
+    simulatorId: uuid('simulator_id')
+      .notNull()
+      .references(() => simulators.id, { onDelete: 'cascade' }),
+    /** 1-based position within the track; contiguous, no gaps/dupes. */
+    position: integer('position').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique().on(t.simulatorId),
+    unique().on(t.trackId, t.position),
+    index('simulator_track_steps_academy_id_track_id_idx').on(t.academyId, t.trackId),
+    pgPolicy('tenant_isolation', {
+      for: 'all',
+      to: 'app_user',
+      using: sql`${t.academyId} = current_setting('app.current_tenant_id', true)`,
+      withCheck: sql`${t.academyId} = current_setting('app.current_tenant_id', true)`,
+    }),
+  ],
+).enableRLS();
+
+// ---------------------------------------------------------------------------
+// simulator_track_progress — one row per (track, learner). A single
+// monotonic frontier integer (`highestUnlockedPosition`, default 1) fully
+// derives locked/unlocked/passed status for every step: positions below the
+// frontier are passed, the frontier itself is unlocked, positions above are
+// locked. Step 1 is open by default even with no row (application default).
+// ---------------------------------------------------------------------------
+
+export const simulatorTrackProgress = pgTable(
+  'simulator_track_progress',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    trackId: uuid('track_id')
+      .notNull()
+      .references(() => simulatorTracks.id, { onDelete: 'cascade' }),
+    /** Tenant discriminator — duplicated for RLS policy without a JOIN. */
+    academyId: text('academy_id')
+      .notNull()
+      .references(() => academies.id, { onDelete: 'cascade' }),
+    /** Opaque Clerk user identifier (not a FK — Clerk is external). */
+    clerkUserId: text('clerk_user_id').notNull(),
+    /** Monotonic frontier — the highest step position unlocked so far. */
+    highestUnlockedPosition: integer('highest_unlocked_position').notNull().default(1),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique().on(t.trackId, t.clerkUserId),
+    index('simulator_track_progress_academy_track_user_idx').on(
+      t.academyId,
+      t.trackId,
       t.clerkUserId,
     ),
     pgPolicy('tenant_isolation', {
