@@ -274,3 +274,20 @@ export class StepLockedError extends Error {
     this.name = 'StepLockedError';
   }
 }
+
+// ---------------------------------------------------------------------------
+// Gamified Tracks — progression (Phase 3)
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown by the `SimulatorTrackProgress` constructor when
+ * `highestUnlockedPosition` is not a positive integer (design.md
+ * "SimulatorTrackProgress ... inv: monotonic non-decreasing", frontier
+ * starts at 1 — never 0 or fractional).
+ */
+export class InvalidSimulatorTrackProgressError extends Error {
+  constructor(reason: string) {
+    super(`Invalid simulator track progress: ${reason}`);
+    this.name = 'InvalidSimulatorTrackProgressError';
+  }
+}

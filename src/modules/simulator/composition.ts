@@ -5,6 +5,7 @@ import { DrizzleSimulatorAttemptRepository } from './infrastructure/drizzle-simu
 import { DrizzleSimulatorCertificateRepository } from './infrastructure/drizzle-simulator-certificate.repository';
 import { DrizzleSimulatorTrackRepository } from './infrastructure/drizzle-simulator-track.repository';
 import { DrizzleSimulatorTrackStepRepository } from './infrastructure/drizzle-simulator-track-step.repository';
+import { DrizzleSimulatorTrackProgressRepository } from './infrastructure/drizzle-simulator-track-progress.repository';
 import { CryptoRandomAdapter } from './infrastructure/crypto-random.adapter';
 import { CreateBankUseCase } from './application/create-bank.use-case';
 import { UpdateBankUseCase } from './application/update-bank.use-case';
@@ -31,6 +32,9 @@ import { CreateTrackUseCase } from './application/create-track.use-case';
 import { AddSimulatorToTrackStepUseCase } from './application/add-simulator-to-track-step.use-case';
 import { ReorderTrackStepsUseCase } from './application/reorder-track-steps.use-case';
 import { RemoveTrackStepUseCase } from './application/remove-track-step.use-case';
+import { AdvanceProgressOnPassUseCase } from './application/advance-progress-on-pass.use-case';
+import { GetTrackForLearnerUseCase } from './application/get-track-for-learner.use-case';
+export type { TrackForLearnerView, TrackStepView, TrackStepStatus } from './application/get-track-for-learner.use-case';
 
 export interface SimulatorComposition {
   createBank: CreateBankUseCase;
@@ -57,6 +61,8 @@ export interface SimulatorComposition {
   addSimulatorToTrackStep: AddSimulatorToTrackStepUseCase;
   reorderTrackSteps: ReorderTrackStepsUseCase;
   removeTrackStep: RemoveTrackStepUseCase;
+  advanceProgressOnPass: AdvanceProgressOnPassUseCase;
+  getTrackForLearner: GetTrackForLearnerUseCase;
 }
 
 /**
@@ -75,7 +81,13 @@ export function makeSimulatorComposition(): SimulatorComposition {
   const certificateRepo = new DrizzleSimulatorCertificateRepository();
   const trackRepo = new DrizzleSimulatorTrackRepository();
   const trackStepRepo = new DrizzleSimulatorTrackStepRepository();
+  const trackProgressRepo = new DrizzleSimulatorTrackProgressRepository();
   const rng = new CryptoRandomAdapter();
+  const advanceProgressOnPassUseCase = new AdvanceProgressOnPassUseCase(
+    trackStepRepo,
+    attemptRepo,
+    trackProgressRepo,
+  );
 
   return {
     createBank: new CreateBankUseCase(bankRepo),
@@ -102,5 +114,12 @@ export function makeSimulatorComposition(): SimulatorComposition {
     addSimulatorToTrackStep: new AddSimulatorToTrackStepUseCase(trackRepo, trackStepRepo, simulatorRepo),
     reorderTrackSteps: new ReorderTrackStepsUseCase(trackRepo, trackStepRepo),
     removeTrackStep: new RemoveTrackStepUseCase(trackRepo, trackStepRepo),
+    advanceProgressOnPass: advanceProgressOnPassUseCase,
+    getTrackForLearner: new GetTrackForLearnerUseCase(
+      trackRepo,
+      trackStepRepo,
+      trackProgressRepo,
+      advanceProgressOnPassUseCase,
+    ),
   };
 }
