@@ -25,6 +25,8 @@ import { StartAttemptUseCase } from './application/start-attempt.use-case';
 import { SubmitAttemptUseCase } from './application/submit-attempt.use-case';
 import { GetAttemptUseCase } from './application/get-attempt.use-case';
 import { IssueSimulatorCertificateUseCase } from './application/issue-simulator-certificate.use-case';
+import { ImportQuestionsFromCsvUseCase } from './application/import-questions-from-csv.use-case';
+import { Rfc4180CsvQuestionSource } from './infrastructure/rfc4180-csv-question-source.adapter';
 
 export interface SimulatorComposition {
   createBank: CreateBankUseCase;
@@ -47,6 +49,7 @@ export interface SimulatorComposition {
   submitAttempt: SubmitAttemptUseCase;
   getAttempt: GetAttemptUseCase;
   issueSimulatorCertificate: IssueSimulatorCertificateUseCase;
+  importQuestionsFromCsv: ImportQuestionsFromCsvUseCase;
 }
 
 /**
@@ -64,6 +67,7 @@ export function makeSimulatorComposition(): SimulatorComposition {
   const attemptRepo = new DrizzleSimulatorAttemptRepository();
   const certificateRepo = new DrizzleSimulatorCertificateRepository();
   const rng = new CryptoRandomAdapter();
+  const csvSource = new Rfc4180CsvQuestionSource();
 
   return {
     createBank: new CreateBankUseCase(bankRepo),
@@ -86,5 +90,6 @@ export function makeSimulatorComposition(): SimulatorComposition {
     submitAttempt: new SubmitAttemptUseCase(attemptRepo, simulatorRepo),
     getAttempt: new GetAttemptUseCase(attemptRepo, simulatorRepo),
     issueSimulatorCertificate: new IssueSimulatorCertificateUseCase(attemptRepo, certificateRepo),
+    importQuestionsFromCsv: new ImportQuestionsFromCsvUseCase(questionRepo, csvSource),
   };
 }
