@@ -35,6 +35,8 @@ import { RemoveTrackStepUseCase } from './application/remove-track-step.use-case
 import { AdvanceProgressOnPassUseCase } from './application/advance-progress-on-pass.use-case';
 import { GetTrackForLearnerUseCase } from './application/get-track-for-learner.use-case';
 export type { TrackForLearnerView, TrackStepView, TrackStepStatus } from './application/get-track-for-learner.use-case';
+import { ImportQuestionsFromCsvUseCase } from './application/import-questions-from-csv.use-case';
+import { Rfc4180CsvQuestionSource } from './infrastructure/rfc4180-csv-question-source.adapter';
 
 export interface SimulatorComposition {
   createBank: CreateBankUseCase;
@@ -63,6 +65,7 @@ export interface SimulatorComposition {
   removeTrackStep: RemoveTrackStepUseCase;
   advanceProgressOnPass: AdvanceProgressOnPassUseCase;
   getTrackForLearner: GetTrackForLearnerUseCase;
+  importQuestionsFromCsv: ImportQuestionsFromCsvUseCase;
 }
 
 /**
@@ -88,6 +91,7 @@ export function makeSimulatorComposition(): SimulatorComposition {
     attemptRepo,
     trackProgressRepo,
   );
+  const csvSource = new Rfc4180CsvQuestionSource();
 
   return {
     createBank: new CreateBankUseCase(bankRepo),
@@ -121,5 +125,6 @@ export function makeSimulatorComposition(): SimulatorComposition {
       trackProgressRepo,
       advanceProgressOnPassUseCase,
     ),
+    importQuestionsFromCsv: new ImportQuestionsFromCsvUseCase(questionRepo, csvSource, bankRepo),
   };
 }
