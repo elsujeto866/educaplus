@@ -117,6 +117,7 @@ function makeStepRepo(overrides: Partial<SimulatorTrackStepRepository> = {}): Si
     countByTrack: vi.fn().mockResolvedValue(0),
     deleteById: vi.fn().mockResolvedValue(undefined),
     replacePositions: vi.fn().mockResolvedValue(undefined),
+    removeAndRecompact: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -364,11 +365,15 @@ describe('RemoveTrackStepUseCase', () => {
 
     expect(remaining.map((s) => s.id)).toEqual(['a', 'c']);
     expect(remaining.map((s) => s.position)).toEqual([1, 2]);
-    expect(stepRepo.deleteById).toHaveBeenCalledWith(adminCtx, 'b');
-    expect(stepRepo.replacePositions).toHaveBeenCalledWith(adminCtx, [
+    // Delete + re-compact must run as ONE atomic repository call, not two
+    // separate transactions — a failure between them would otherwise leave
+    // a position gap.
+    expect(stepRepo.removeAndRecompact).toHaveBeenCalledWith(adminCtx, 'b', [
       { id: 'a', position: 1 },
       { id: 'c', position: 2 },
     ]);
+    expect(stepRepo.deleteById).not.toHaveBeenCalled();
+    expect(stepRepo.replacePositions).not.toHaveBeenCalled();
   });
 
   it('throws SimulatorTrackNotFoundError when the track does not exist', async () => {
@@ -389,7 +394,7 @@ describe('RemoveTrackStepUseCase', () => {
     await expect(
       useCase.execute(adminCtx, { trackId: 'track-1', stepId: 'missing' }),
     ).rejects.toThrow(SimulatorTrackStepNotFoundError);
-    expect(stepRepo.deleteById).not.toHaveBeenCalled();
+    expect(stepRepo.removeAndRecompact).not.toHaveBeenCalled();
   });
 
   it('throws UnauthorizedError when role is student', async () => {
@@ -400,6 +405,6 @@ describe('RemoveTrackStepUseCase', () => {
     await expect(
       useCase.execute(learnerCtx, { trackId: 'track-1', stepId: 'a' }),
     ).rejects.toThrow(UnauthorizedError);
-    expect(stepRepo.deleteById).not.toHaveBeenCalled();
+    expect(stepRepo.removeAndRecompact).not.toHaveBeenCalled();
   });
 });

@@ -15,7 +15,10 @@ export interface RemoveTrackStepInput {
  *
  * Deletes a step and re-compacts the remaining steps' positions back to a
  * contiguous 1..N sequence (spec.md "Remove a step": "remaining steps
- * re-sequence ... contiguously").
+ * re-sequence ... contiguously"). The delete and the re-compaction run as
+ * ONE atomic repository call (`removeAndRecompact`) — a single
+ * `withTenant`/`db.transaction` — so a failure between them can never leave
+ * a position gap (which two separate transactions would risk).
  *
  * Authorization: admin or instructor.
  */
@@ -35,16 +38,15 @@ export class RemoveTrackStepUseCase {
     const target = existing.find((s) => s.id === input.stepId);
     if (!target) throw new SimulatorTrackStepNotFoundError(input.stepId);
 
-    await this.stepRepo.deleteById(ctx, input.stepId);
-
     const now = new Date();
     const remaining = existing
       .filter((s) => s.id !== input.stepId)
       .sort((a, b) => a.position - b.position)
       .map((s, index) => s.withPosition(index + 1, now));
 
-    await this.stepRepo.replacePositions(
+    await this.stepRepo.removeAndRecompact(
       ctx,
+      input.stepId,
       remaining.map((s) => ({ id: s.id, position: s.position })),
     );
 
