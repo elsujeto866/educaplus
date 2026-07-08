@@ -179,3 +179,69 @@ export class SimulatorCertificateNotConfiguredError extends Error {
     this.name = 'SimulatorCertificateNotConfiguredError';
   }
 }
+
+// ---------------------------------------------------------------------------
+// Gamified Tracks — authoring (Phase 2)
+// ---------------------------------------------------------------------------
+
+export class InvalidSimulatorTrackError extends Error {
+  constructor(reason: string) {
+    super(`Invalid simulator track: ${reason}`);
+    this.name = 'InvalidSimulatorTrackError';
+  }
+}
+
+export class SimulatorTrackNotFoundError extends Error {
+  constructor(trackId: string) {
+    super(`Simulator track "${trackId}" does not exist or does not belong to the caller's academy`);
+    this.name = 'SimulatorTrackNotFoundError';
+  }
+}
+
+export class InvalidSimulatorTrackStepError extends Error {
+  constructor(reason: string) {
+    super(`Invalid simulator track step: ${reason}`);
+    this.name = 'InvalidSimulatorTrackStepError';
+  }
+}
+
+/**
+ * Thrown by ReorderTrackStepsUseCase/RemoveTrackStepUseCase when a
+ * caller-supplied stepId does not match any step currently on the track —
+ * mirrors `QuestionNotFoundError`'s "not found or not mine" collapse.
+ */
+export class SimulatorTrackStepNotFoundError extends Error {
+  constructor(stepId: string) {
+    super(`Simulator track step "${stepId}" does not exist on this track`);
+    this.name = 'SimulatorTrackStepNotFoundError';
+  }
+}
+
+/**
+ * Thrown by AddSimulatorToTrackStepUseCase (design.md "At-most-one-track-
+ * per-simulator via unique(simulator_id) on steps") when the target
+ * simulator already has a step row in ANY track. The DB unique constraint
+ * surfaces as a Postgres unique-violation (23505); the use-case maps it to
+ * this domain error instead of letting the raw DB error escape.
+ */
+export class SimulatorAlreadyInTrackError extends Error {
+  constructor(simulatorId: string) {
+    super(`Simulator "${simulatorId}" is already assigned to a track`);
+    this.name = 'SimulatorAlreadyInTrackError';
+  }
+}
+
+/**
+ * Thrown by the progression seam (Phase 3 — GetTrackForLearnerUseCase /
+ * the track-aware start/submit gate) when a learner attempts to start or
+ * submit an attempt on a step that has not yet been unlocked for them
+ * (spec.md "Reject attempt on locked step"). Declared here in Phase 2 per
+ * tasks.md 2.2 so Phase 3 can import it without touching this file again —
+ * NOT thrown by anything in this phase.
+ */
+export class StepLockedError extends Error {
+  constructor(simulatorId: string) {
+    super(`Simulator "${simulatorId}"'s track step is locked for this learner`);
+    this.name = 'StepLockedError';
+  }
+}

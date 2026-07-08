@@ -3,6 +3,8 @@ import { DrizzleQuestionRepository } from './infrastructure/drizzle-question.rep
 import { DrizzleSimulatorRepository } from './infrastructure/drizzle-simulator.repository';
 import { DrizzleSimulatorAttemptRepository } from './infrastructure/drizzle-simulator-attempt.repository';
 import { DrizzleSimulatorCertificateRepository } from './infrastructure/drizzle-simulator-certificate.repository';
+import { DrizzleSimulatorTrackRepository } from './infrastructure/drizzle-simulator-track.repository';
+import { DrizzleSimulatorTrackStepRepository } from './infrastructure/drizzle-simulator-track-step.repository';
 import { CryptoRandomAdapter } from './infrastructure/crypto-random.adapter';
 import { CreateBankUseCase } from './application/create-bank.use-case';
 import { UpdateBankUseCase } from './application/update-bank.use-case';
@@ -25,6 +27,10 @@ import { StartAttemptUseCase } from './application/start-attempt.use-case';
 import { SubmitAttemptUseCase } from './application/submit-attempt.use-case';
 import { GetAttemptUseCase } from './application/get-attempt.use-case';
 import { IssueSimulatorCertificateUseCase } from './application/issue-simulator-certificate.use-case';
+import { CreateTrackUseCase } from './application/create-track.use-case';
+import { AddSimulatorToTrackStepUseCase } from './application/add-simulator-to-track-step.use-case';
+import { ReorderTrackStepsUseCase } from './application/reorder-track-steps.use-case';
+import { RemoveTrackStepUseCase } from './application/remove-track-step.use-case';
 
 export interface SimulatorComposition {
   createBank: CreateBankUseCase;
@@ -47,6 +53,10 @@ export interface SimulatorComposition {
   submitAttempt: SubmitAttemptUseCase;
   getAttempt: GetAttemptUseCase;
   issueSimulatorCertificate: IssueSimulatorCertificateUseCase;
+  createTrack: CreateTrackUseCase;
+  addSimulatorToTrackStep: AddSimulatorToTrackStepUseCase;
+  reorderTrackSteps: ReorderTrackStepsUseCase;
+  removeTrackStep: RemoveTrackStepUseCase;
 }
 
 /**
@@ -63,6 +73,8 @@ export function makeSimulatorComposition(): SimulatorComposition {
   const simulatorRepo = new DrizzleSimulatorRepository();
   const attemptRepo = new DrizzleSimulatorAttemptRepository();
   const certificateRepo = new DrizzleSimulatorCertificateRepository();
+  const trackRepo = new DrizzleSimulatorTrackRepository();
+  const trackStepRepo = new DrizzleSimulatorTrackStepRepository();
   const rng = new CryptoRandomAdapter();
 
   return {
@@ -86,5 +98,9 @@ export function makeSimulatorComposition(): SimulatorComposition {
     submitAttempt: new SubmitAttemptUseCase(attemptRepo, simulatorRepo),
     getAttempt: new GetAttemptUseCase(attemptRepo, simulatorRepo),
     issueSimulatorCertificate: new IssueSimulatorCertificateUseCase(attemptRepo, certificateRepo),
+    createTrack: new CreateTrackUseCase(trackRepo),
+    addSimulatorToTrackStep: new AddSimulatorToTrackStepUseCase(trackRepo, trackStepRepo, simulatorRepo),
+    reorderTrackSteps: new ReorderTrackStepsUseCase(trackRepo, trackStepRepo),
+    removeTrackStep: new RemoveTrackStepUseCase(trackRepo, trackStepRepo),
   };
 }
