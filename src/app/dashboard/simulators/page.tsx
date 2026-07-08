@@ -7,6 +7,7 @@ import { Card } from '@/shared/ui/atoms/card';
 import { UserMenu } from '../_components/user-menu';
 import { CoursesNavLink } from '../courses/_lib/courses-nav-link';
 import { SimulatorsNavLink } from './_lib/simulators-nav-link';
+import { TracksNavLink } from './_lib/tracks-nav-link';
 import { requireInstructor } from './_lib/require-instructor';
 
 // Inline literal union instead of importing `Simulator`'s status type from
@@ -44,6 +45,7 @@ export default async function SimulatorsPage() {
         <>
           <CoursesNavLink ctx={ctx} />
           <SimulatorsNavLink ctx={ctx} />
+          <TracksNavLink ctx={ctx} />
         </>
       }
       userSlot={<UserMenu />}

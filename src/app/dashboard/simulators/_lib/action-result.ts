@@ -32,6 +32,14 @@ const DOMAIN_ERROR_MESSAGES: Record<string, string> = {
   SimulatorAttemptNotFoundError: 'El intento no existe o no tenés acceso a él.',
   AttemptAlreadySubmittedError: 'Este intento ya fue entregado y no se puede volver a enviar.',
   InvalidAttemptAnswersError: 'Las respuestas enviadas no son válidas para este intento.',
+  // Gamified Tracks — authoring (Phase 5).
+  InvalidSimulatorTrackError: 'Los datos de la pista no son válidos.',
+  SimulatorTrackNotFoundError: 'La pista no existe o no tenés acceso a ella.',
+  InvalidSimulatorTrackStepError: 'El paso de la pista no es válido.',
+  SimulatorTrackStepNotFoundError: 'El paso no existe en esta pista.',
+  SimulatorAlreadyInTrackError: 'Este simulacro ya está asignado a otra pista.',
+  SimulatorNotPublishedError: 'Solo se pueden agregar simulacros publicados a una pista.',
+  TrackStepPositionConflictError: 'Otro paso ya ocupa esa posición. Probá de nuevo.',
 };
 
 /** Extracts the first Zod issue message, falling back to a generic one. */

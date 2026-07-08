@@ -6,6 +6,7 @@ import { PageHeader } from '@/shared/ui/molecules/page-header';
 import { UserMenu } from '../../../_components/user-menu';
 import { CoursesNavLink } from '../../../courses/_lib/courses-nav-link';
 import { SimulatorsNavLink } from '../../_lib/simulators-nav-link';
+import { TracksNavLink } from '../../_lib/tracks-nav-link';
 import { requireInstructor } from '../../_lib/require-instructor';
 import { BankEditForm } from './_components/bank-edit-form';
 import { BankDeleteAction } from './_components/bank-delete-action';
@@ -42,6 +43,7 @@ export default async function BankDetailPage({ params }: BankDetailPageProps) {
         <>
           <CoursesNavLink ctx={ctx} />
           <SimulatorsNavLink ctx={ctx} />
+          <TracksNavLink ctx={ctx} />
         </>
       }
       userSlot={<UserMenu />}
