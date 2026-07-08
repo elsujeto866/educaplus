@@ -8,9 +8,19 @@ import type { CsvQuestionSource, ParsedCsvQuestion } from '../domain/ports/csv-q
  */
 const OPTION_LETTERS = ['a', 'b', 'c', 'd'] as const;
 
+/** One tokenized physical CSV row plus the 1-based source line it STARTS on (a row spanning a multi-line quoted field is attributed to its first physical line). */
+interface TokenizedRow {
+  cells: string[];
+  line: number;
+}
+
 /**
- * Zero-dependency RFC-4180 tokenizer. Turns raw CSV text into a matrix of
- * string cells — one array per physical CSV row (header included).
+ * Zero-dependency RFC-4180 tokenizer. Turns raw CSV text into one
+ * `TokenizedRow` per physical CSV row (header included), each carrying the
+ * 1-based source-file line it starts on so callers can report accurate
+ * `rowNumber`s even when blank lines or multi-line quoted fields shift a
+ * row's physical position away from its position in the filtered/data-only
+ * array.
  *
  * Handles:
  *   - quoted fields (`"..."`), including a comma or a newline embedded
@@ -27,11 +37,13 @@ const OPTION_LETTERS = ['a', 'b', 'c', 'd'] as const;
  * are a downstream (use-case + `Question` constructor) validation concern,
  * never a reason to abort the whole file (spec.md SKIP-INVALID policy).
  */
-function tokenizeCsv(content: string): string[][] {
-  const rows: string[][] = [];
+function tokenizeCsv(content: string): TokenizedRow[] {
+  const rows: TokenizedRow[] = [];
   let row: string[] = [];
   let field = '';
   let inQuotes = false;
+  let line = 1;
+  let rowStartLine = 1;
 
   const pushField = () => {
     row.push(field);
@@ -39,7 +51,7 @@ function tokenizeCsv(content: string): string[][] {
   };
   const pushRow = () => {
     pushField();
-    rows.push(row);
+    rows.push({ cells: row, line: rowStartLine });
     row = [];
   };
 
@@ -56,6 +68,15 @@ function tokenizeCsv(content: string): string[][] {
           continue;
         }
         inQuotes = false;
+        i += 1;
+        continue;
+      }
+      if (char === '\n') {
+        // A newline embedded inside a quoted field is part of the row's
+        // content, not a row terminator — but it still advances the
+        // physical line counter for rows that follow.
+        field += char;
+        line += 1;
         i += 1;
         continue;
       }
@@ -77,11 +98,15 @@ function tokenizeCsv(content: string): string[][] {
     if (char === '\r') {
       if (content[i + 1] === '\n') i += 1;
       pushRow();
+      line += 1;
+      rowStartLine = line;
       i += 1;
       continue;
     }
     if (char === '\n') {
       pushRow();
+      line += 1;
+      rowStartLine = line;
       i += 1;
       continue;
     }
@@ -97,8 +122,8 @@ function tokenizeCsv(content: string): string[][] {
   return rows;
 }
 
-function isBlankRow(row: string[]): boolean {
-  return row.every((cell) => cell.trim() === '');
+function isBlankRow(row: TokenizedRow): boolean {
+  return row.cells.every((cell) => cell.trim() === '');
 }
 
 /**
@@ -116,7 +141,7 @@ export class Rfc4180CsvQuestionSource implements CsvQuestionSource {
     const rows = tokenizeCsv(content).filter((row) => !isBlankRow(row));
     if (rows.length === 0) return [];
 
-    const header = rows[0]!.map((cell) => cell.trim().toLowerCase());
+    const header = rows[0]!.cells.map((cell) => cell.trim().toLowerCase());
     const dataRows = rows.slice(1);
 
     const columnIndex = (name: string): number => header.indexOf(name);
@@ -126,23 +151,31 @@ export class Rfc4180CsvQuestionSource implements CsvQuestionSource {
       return (row[index] ?? '').trim();
     };
 
-    return dataRows.map((row, dataIndex) => {
-      const rowNumber = dataIndex + 2; // +1 for 1-based, +1 for the header row itself
+    return dataRows.map((row) => {
+      // The tokenizer already tracks each row's physical source-file line
+      // (accounting for filtered blank lines and multi-line quoted fields),
+      // so it doubles as the port contract's "1-based row number as it
+      // appears in the source file" — no separate offset math needed.
+      const rowNumber = row.line;
 
       const options = OPTION_LETTERS.map((letter) => ({
         id: letter,
-        label: cell(row, `option_${letter}`),
+        label: cell(row.cells, `option_${letter}`),
       })).filter((option) => option.label !== '');
 
-      const topic = cell(row, 'topic') || null;
-      const difficulty = cell(row, 'difficulty') || null;
-      const explanation = cell(row, 'explanation') || null;
+      const topic = cell(row.cells, 'topic') || null;
+      // Lower-cased for parity with `correct_option` below — `parseDifficulty`
+      // (domain/value-objects/difficulty.vo.ts) only accepts lowercase
+      // "easy"/"medium"/"hard", so a mixed-case CSV cell like "Easy" or
+      // "HARD" must be normalized here or it is wrongly rejected downstream.
+      const difficulty = cell(row.cells, 'difficulty').toLowerCase() || null;
+      const explanation = cell(row.cells, 'explanation') || null;
 
       const parsed: ParsedCsvQuestion = {
         rowNumber,
-        prompt: cell(row, 'prompt'),
+        prompt: cell(row.cells, 'prompt'),
         options,
-        correctOptionId: cell(row, 'correct_option').toLowerCase(),
+        correctOptionId: cell(row.cells, 'correct_option').toLowerCase(),
         topic,
         difficulty,
         explanation,

@@ -155,4 +155,32 @@ describe('Rfc4180CsvQuestionSource', () => {
     expect(result[0]!.difficulty).toBeNull();
     expect(result[0]!.explanation).toBeNull();
   });
+
+  it('lower-cases the difficulty cell so mixed-case CSV values are accepted (parity with correct_option)', () => {
+    const csv = `${HEADER}\nP1,A,B,,,a,,Easy,\nP2,A,B,,,a,,MEDIUM,\nP3,A,B,,,a,,HaRd,\n`;
+
+    const result = source.parse(csv);
+
+    expect(result.map((r) => r.difficulty)).toEqual(['easy', 'medium', 'hard']);
+  });
+
+  it('reports rowNumber as the physical source-file line, not the filtered data-row index', () => {
+    // line 1: blank, line 2: header, line 3: blank, line 4: data row
+    const csv = `\n${HEADER}\n\nP1,A,B,,,a,,,\n`;
+
+    const result = source.parse(csv);
+
+    expect(result[0]!.rowNumber).toBe(4);
+  });
+
+  it('reports rowNumber correctly for a row following a multi-line quoted field', () => {
+    // line 1: header, lines 2-3: multi-line quoted prompt (one physical row
+    // spanning two lines), line 4: next data row.
+    const csv = `${HEADER}\n"Line one\nLine two",A,B,,,a,,,\nP2,A,B,,,b,,,\n`;
+
+    const result = source.parse(csv);
+
+    expect(result[0]!.rowNumber).toBe(2);
+    expect(result[1]!.rowNumber).toBe(4);
+  });
 });
