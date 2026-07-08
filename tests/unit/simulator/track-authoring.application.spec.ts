@@ -20,6 +20,8 @@ import {
   SimulatorTrackStepNotFoundError,
   SimulatorAlreadyInTrackError,
   SimulatorNotFoundError,
+  SimulatorNotPublishedError,
+  TrackStepPositionConflictError,
   InvalidSimulatorTrackStepError,
 } from '../../../src/modules/simulator/domain/errors';
 import type { SimulatorTrackRepository } from '../../../src/modules/simulator/domain/ports/simulator-track.repository';
@@ -32,12 +34,24 @@ const adminCtx: TenantContext = { orgId: 'org_A', userId: 'user_1', role: 'admin
 const instructorCtx: TenantContext = { orgId: 'org_A', userId: 'user_2', role: 'instructor' };
 const learnerCtx: TenantContext = { orgId: 'org_A', userId: 'user_3', role: 'student' };
 
-/** Postgres unique-violation SQLSTATE shape — mirrors certificate use-case fixtures. */
-function uniqueViolationError(): Error & { code: string } {
-  const err = new Error('duplicate key value violates unique constraint') as Error & { code: string };
+/**
+ * Postgres unique-violation SQLSTATE shape — mirrors certificate use-case
+ * fixtures, plus `constraint_name` (the field postgres-js actually attaches
+ * to the thrown error) so tests can prove the two `simulator_track_steps`
+ * unique constraints are disambiguated correctly.
+ */
+function uniqueViolationError(constraintName: string): Error & { code: string; constraint_name: string } {
+  const err = new Error('duplicate key value violates unique constraint') as Error & {
+    code: string;
+    constraint_name: string;
+  };
   err.code = '23505';
+  err.constraint_name = constraintName;
   return err;
 }
+
+const SIMULATOR_ID_UNIQUE_CONSTRAINT = 'simulator_track_steps_simulator_id_unique';
+const TRACK_ID_POSITION_UNIQUE_CONSTRAINT = 'simulator_track_steps_track_id_position_unique';
 
 function makeTrack(overrides: Partial<ConstructorParameters<typeof SimulatorTrack>[0]> = {}): SimulatorTrack {
   return new SimulatorTrack({
@@ -208,15 +222,44 @@ describe('AddSimulatorToTrackStepUseCase', () => {
     expect(stepRepo.create).not.toHaveBeenCalled();
   });
 
-  it('maps a unique-violation on create to SimulatorAlreadyInTrackError', async () => {
+  it('throws SimulatorNotPublishedError when the simulator is a draft', async () => {
     const trackRepo = makeTrackRepo({ findById: vi.fn().mockResolvedValue(makeTrack()) });
-    const stepRepo = makeStepRepo({ create: vi.fn().mockRejectedValue(uniqueViolationError()) });
+    const stepRepo = makeStepRepo();
+    const simulatorRepo = makeSimulatorRepo({
+      findById: vi.fn().mockResolvedValue(makeSimulator({ status: 'draft' })),
+    });
+    const useCase = new AddSimulatorToTrackStepUseCase(trackRepo, stepRepo, simulatorRepo);
+
+    await expect(
+      useCase.execute(adminCtx, { id: 'step-1', trackId: 'track-1', academyId: 'org_A', simulatorId: 'sim-1' }),
+    ).rejects.toThrow(SimulatorNotPublishedError);
+    expect(stepRepo.create).not.toHaveBeenCalled();
+  });
+
+  it('maps a unique-violation on the simulator_id constraint to SimulatorAlreadyInTrackError', async () => {
+    const trackRepo = makeTrackRepo({ findById: vi.fn().mockResolvedValue(makeTrack()) });
+    const stepRepo = makeStepRepo({
+      create: vi.fn().mockRejectedValue(uniqueViolationError(SIMULATOR_ID_UNIQUE_CONSTRAINT)),
+    });
     const simulatorRepo = makeSimulatorRepo({ findById: vi.fn().mockResolvedValue(makeSimulator()) });
     const useCase = new AddSimulatorToTrackStepUseCase(trackRepo, stepRepo, simulatorRepo);
 
     await expect(
       useCase.execute(adminCtx, { id: 'step-1', trackId: 'track-1', academyId: 'org_A', simulatorId: 'sim-1' }),
     ).rejects.toThrow(SimulatorAlreadyInTrackError);
+  });
+
+  it('maps a unique-violation on the (track_id, position) constraint to a distinct TrackStepPositionConflictError, NOT SimulatorAlreadyInTrackError', async () => {
+    const trackRepo = makeTrackRepo({ findById: vi.fn().mockResolvedValue(makeTrack()) });
+    const stepRepo = makeStepRepo({
+      create: vi.fn().mockRejectedValue(uniqueViolationError(TRACK_ID_POSITION_UNIQUE_CONSTRAINT)),
+    });
+    const simulatorRepo = makeSimulatorRepo({ findById: vi.fn().mockResolvedValue(makeSimulator()) });
+    const useCase = new AddSimulatorToTrackStepUseCase(trackRepo, stepRepo, simulatorRepo);
+
+    await expect(
+      useCase.execute(adminCtx, { id: 'step-1', trackId: 'track-1', academyId: 'org_A', simulatorId: 'sim-1' }),
+    ).rejects.toThrow(TrackStepPositionConflictError);
   });
 
   it('throws UnauthorizedError when role is student', async () => {

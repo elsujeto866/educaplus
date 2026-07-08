@@ -232,6 +232,35 @@ export class SimulatorAlreadyInTrackError extends Error {
 }
 
 /**
+ * Thrown by AddSimulatorToTrackStepUseCase (spec.md "Track authoring"
+ * requirement: "MUST let an instructor ... add EXISTING published
+ * simulators as ordered steps") when the target simulator's status is
+ * still `draft`. Only PUBLISHED simulators may become track steps.
+ */
+export class SimulatorNotPublishedError extends Error {
+  constructor(simulatorId: string) {
+    super(`Simulator "${simulatorId}" is not published and cannot be added to a track`);
+    this.name = 'SimulatorNotPublishedError';
+  }
+}
+
+/**
+ * Thrown by AddSimulatorToTrackStepUseCase when a Postgres unique-violation
+ * (23505) on `simulator_track_steps` is NOT the `simulator_id` constraint —
+ * i.e. it is the `unique(track_id, position)` constraint instead. This is a
+ * concurrency-only race (two concurrent adds both read the same
+ * `countByTrack` and try to claim the same tail position); it must never be
+ * mislabeled as `SimulatorAlreadyInTrackError`, which means something
+ * entirely different (this simulator is already a step somewhere).
+ */
+export class TrackStepPositionConflictError extends Error {
+  constructor(trackId: string, position: number) {
+    super(`Track "${trackId}" already has a step at position ${position}`);
+    this.name = 'TrackStepPositionConflictError';
+  }
+}
+
+/**
  * Thrown by the progression seam (Phase 3 — GetTrackForLearnerUseCase /
  * the track-aware start/submit gate) when a learner attempts to start or
  * submit an attempt on a step that has not yet been unlocked for them
