@@ -14,6 +14,9 @@ import type { TenantContext } from '../../../src/shared/kernel/tenant-context';
 import { UnauthorizedError } from '../../../src/shared/kernel/tenant-context';
 import { ImportQuestionsFromCsvUseCase } from '../../../src/modules/simulator/application/import-questions-from-csv.use-case';
 import type { QuestionRepository } from '../../../src/modules/simulator/domain/ports/question.repository';
+import type { QuestionBankRepository } from '../../../src/modules/simulator/domain/ports/question-bank.repository';
+import { QuestionBank } from '../../../src/modules/simulator/domain/question-bank.entity';
+import { QuestionBankNotFoundError } from '../../../src/modules/simulator/domain/errors';
 import type {
   CsvQuestionSource,
   ParsedCsvQuestion,
@@ -31,6 +34,26 @@ function makeQuestionRepo(overrides: Partial<QuestionRepository> = {}): Question
     update: vi.fn().mockResolvedValue(undefined),
     delete: vi.fn().mockResolvedValue(undefined),
     countByBank: vi.fn().mockResolvedValue(0),
+    ...overrides,
+  };
+}
+
+const existingBank = new QuestionBank({
+  id: 'bank-1',
+  academyId: 'org_A',
+  title: 'Existing bank',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+});
+
+function makeBankRepo(overrides: Partial<QuestionBankRepository> = {}): QuestionBankRepository {
+  return {
+    create: vi.fn().mockResolvedValue(undefined),
+    findById: vi.fn().mockResolvedValue(existingBank),
+    findByAcademy: vi.fn(),
+    update: vi.fn().mockResolvedValue(undefined),
+    delete: vi.fn().mockResolvedValue(undefined),
+    isReferencedBySimulator: vi.fn().mockResolvedValue(false),
     ...overrides,
   };
 }
@@ -63,7 +86,7 @@ describe('ImportQuestionsFromCsvUseCase', () => {
     ];
     const questionRepo = makeQuestionRepo({ countByBank: vi.fn().mockResolvedValue(5) });
     const csvSource = makeCsvSource(rows);
-    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, csvSource);
+    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, csvSource, makeBankRepo());
 
     const report = await useCase.execute(adminCtx, {
       bankId: 'bank-1',
@@ -83,7 +106,7 @@ describe('ImportQuestionsFromCsvUseCase', () => {
   it('allows instructor to import questions', async () => {
     const questionRepo = makeQuestionRepo();
     const csvSource = makeCsvSource([makeParsedRow()]);
-    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, csvSource);
+    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, csvSource, makeBankRepo());
 
     const report = await useCase.execute(instructorCtx, {
       bankId: 'bank-1',
@@ -98,7 +121,7 @@ describe('ImportQuestionsFromCsvUseCase', () => {
   it('throws UnauthorizedError when role is student, and parses/persists nothing', async () => {
     const questionRepo = makeQuestionRepo();
     const csvSource = makeCsvSource([makeParsedRow()]);
-    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, csvSource);
+    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, csvSource, makeBankRepo());
 
     await expect(
       useCase.execute(learnerCtx, { bankId: 'bank-1', academyId: 'org_A', content: '', ids: ['q-1'] }),
@@ -109,7 +132,7 @@ describe('ImportQuestionsFromCsvUseCase', () => {
   it('returns imported:0, skipped:[] for an empty/header-only file', async () => {
     const questionRepo = makeQuestionRepo();
     const csvSource = makeCsvSource([]);
-    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, csvSource);
+    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, csvSource, makeBankRepo());
 
     const report = await useCase.execute(adminCtx, {
       bankId: 'bank-1',
@@ -130,7 +153,7 @@ describe('ImportQuestionsFromCsvUseCase', () => {
   it('skips a row with a blank prompt', async () => {
     const rows = [makeParsedRow({ rowNumber: 2, prompt: '' })];
     const questionRepo = makeQuestionRepo();
-    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, makeCsvSource(rows));
+    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, makeCsvSource(rows), makeBankRepo());
 
     const report = await useCase.execute(adminCtx, {
       bankId: 'bank-1',
@@ -146,7 +169,7 @@ describe('ImportQuestionsFromCsvUseCase', () => {
   it('skips a row with fewer than 2 options', async () => {
     const rows = [makeParsedRow({ rowNumber: 3, options: [{ id: 'a', label: 'Only one' }] })];
     const questionRepo = makeQuestionRepo();
-    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, makeCsvSource(rows));
+    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, makeCsvSource(rows), makeBankRepo());
 
     const report = await useCase.execute(adminCtx, {
       bankId: 'bank-1',
@@ -162,7 +185,7 @@ describe('ImportQuestionsFromCsvUseCase', () => {
   it('skips a row whose correct_option does not match any parsed option', async () => {
     const rows = [makeParsedRow({ rowNumber: 4, correctOptionId: 'z' })];
     const questionRepo = makeQuestionRepo();
-    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, makeCsvSource(rows));
+    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, makeCsvSource(rows), makeBankRepo());
 
     const report = await useCase.execute(adminCtx, {
       bankId: 'bank-1',
@@ -189,7 +212,7 @@ describe('ImportQuestionsFromCsvUseCase', () => {
       }),
     ];
     const questionRepo = makeQuestionRepo();
-    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, makeCsvSource(rows));
+    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, makeCsvSource(rows), makeBankRepo());
 
     const report = await useCase.execute(adminCtx, {
       bankId: 'bank-1',
@@ -205,7 +228,7 @@ describe('ImportQuestionsFromCsvUseCase', () => {
   it('skips a row with an invalid difficulty', async () => {
     const rows = [makeParsedRow({ rowNumber: 6, difficulty: 'impossible' })];
     const questionRepo = makeQuestionRepo();
-    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, makeCsvSource(rows));
+    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, makeCsvSource(rows), makeBankRepo());
 
     const report = await useCase.execute(adminCtx, {
       bankId: 'bank-1',
@@ -228,7 +251,7 @@ describe('ImportQuestionsFromCsvUseCase', () => {
       makeParsedRow({ rowNumber: 5, options: [{ id: 'a', label: 'Only one' }] }),
     ];
     const questionRepo = makeQuestionRepo({ countByBank: vi.fn().mockResolvedValue(0) });
-    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, makeCsvSource(rows));
+    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, makeCsvSource(rows), makeBankRepo());
 
     const report = await useCase.execute(adminCtx, {
       bankId: 'bank-1',
@@ -246,7 +269,7 @@ describe('ImportQuestionsFromCsvUseCase', () => {
   it('skips a row with no corresponding id supplied, without crashing', async () => {
     const rows = [makeParsedRow({ rowNumber: 2 })];
     const questionRepo = makeQuestionRepo();
-    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, makeCsvSource(rows));
+    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, makeCsvSource(rows), makeBankRepo());
 
     const report = await useCase.execute(adminCtx, {
       bankId: 'bank-1',
@@ -257,6 +280,30 @@ describe('ImportQuestionsFromCsvUseCase', () => {
 
     expect(report.imported).toBe(0);
     expect(report.skipped).toEqual([{ row: 2, reason: expect.stringContaining('id') }]);
+    expect(questionRepo.create).not.toHaveBeenCalled();
+  });
+
+  // ---------------------------------------------------------------------
+  // bankId ownership/existence guard — a bad or foreign bankId must fail
+  // fast with a clear domain error instead of silently skipping every row
+  // (or, worse, creating dangling-FK questions).
+  // ---------------------------------------------------------------------
+
+  it('throws QuestionBankNotFoundError when bankId does not resolve for this tenant, and parses/persists nothing', async () => {
+    const questionRepo = makeQuestionRepo();
+    const csvSource = makeCsvSource([makeParsedRow()]);
+    const bankRepo = makeBankRepo({ findById: vi.fn().mockResolvedValue(null) });
+    const useCase = new ImportQuestionsFromCsvUseCase(questionRepo, csvSource, bankRepo);
+
+    await expect(
+      useCase.execute(adminCtx, {
+        bankId: 'unknown-bank',
+        academyId: 'org_A',
+        content: '',
+        ids: ['q-1'],
+      }),
+    ).rejects.toThrow(QuestionBankNotFoundError);
+    expect(csvSource.parse).not.toHaveBeenCalled();
     expect(questionRepo.create).not.toHaveBeenCalled();
   });
 });

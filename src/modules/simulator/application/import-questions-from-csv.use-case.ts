@@ -3,7 +3,9 @@ import type { TenantContext } from '@/shared/kernel/tenant-context';
 import { Question } from '../domain/question.entity';
 import type { Difficulty } from '../domain/value-objects/difficulty.vo';
 import type { QuestionRepository } from '../domain/ports/question.repository';
+import type { QuestionBankRepository } from '../domain/ports/question-bank.repository';
 import type { CsvQuestionSource } from '../domain/ports/csv-question-source.port';
+import { QuestionBankNotFoundError } from '../domain/errors';
 
 export interface ImportQuestionsFromCsvInput {
   bankId: string;
@@ -45,11 +47,19 @@ export interface ImportQuestionsFromCsvReport {
  * `AddQuestionUseCase`'s `count + 1` convention).
  *
  * Authorization: admin or instructor (same as `AddQuestionUseCase`).
+ *
+ * bankId guard: the target bank is loaded via `bankRepo.findById` (tenant-
+ * scoped through `ctx`, same as `GetBankDetailUseCase`) BEFORE any row is
+ * parsed or persisted. A bad or foreign `bankId` previously caused every
+ * row to be silently skipped (or, for a same-tenant-but-wrong bankId typo,
+ * would have created dangling-FK questions) — this turns that into a clean,
+ * fail-fast `QuestionBankNotFoundError`.
  */
 export class ImportQuestionsFromCsvUseCase {
   constructor(
     private readonly questionRepo: QuestionRepository,
     private readonly csvSource: CsvQuestionSource,
+    private readonly bankRepo: QuestionBankRepository,
   ) {}
 
   async execute(
@@ -57,6 +67,11 @@ export class ImportQuestionsFromCsvUseCase {
     input: ImportQuestionsFromCsvInput,
   ): Promise<ImportQuestionsFromCsvReport> {
     assertRole(ctx, ['admin', 'instructor']);
+
+    const bank = await this.bankRepo.findById(ctx, input.bankId);
+    if (!bank) {
+      throw new QuestionBankNotFoundError(input.bankId);
+    }
 
     const parsedRows = this.csvSource.parse(input.content);
     const startingCount = await this.questionRepo.countByBank(ctx, input.bankId);

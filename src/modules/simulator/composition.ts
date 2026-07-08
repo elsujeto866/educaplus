@@ -90,6 +90,6 @@ export function makeSimulatorComposition(): SimulatorComposition {
     submitAttempt: new SubmitAttemptUseCase(attemptRepo, simulatorRepo),
     getAttempt: new GetAttemptUseCase(attemptRepo, simulatorRepo),
     issueSimulatorCertificate: new IssueSimulatorCertificateUseCase(attemptRepo, certificateRepo),
-    importQuestionsFromCsv: new ImportQuestionsFromCsvUseCase(questionRepo, csvSource),
+    importQuestionsFromCsv: new ImportQuestionsFromCsvUseCase(questionRepo, csvSource, bankRepo),
   };
 }
