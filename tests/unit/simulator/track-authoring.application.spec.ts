@@ -12,6 +12,8 @@ import { CreateTrackUseCase } from '../../../src/modules/simulator/application/c
 import { AddSimulatorToTrackStepUseCase } from '../../../src/modules/simulator/application/add-simulator-to-track-step.use-case';
 import { ReorderTrackStepsUseCase } from '../../../src/modules/simulator/application/reorder-track-steps.use-case';
 import { RemoveTrackStepUseCase } from '../../../src/modules/simulator/application/remove-track-step.use-case';
+import { ListTracksUseCase } from '../../../src/modules/simulator/application/list-tracks.use-case';
+import { GetTrackDetailUseCase } from '../../../src/modules/simulator/application/get-track-detail.use-case';
 import { SimulatorTrack } from '../../../src/modules/simulator/domain/simulator-track.entity';
 import { SimulatorTrackStep } from '../../../src/modules/simulator/domain/simulator-track-step.entity';
 import { Simulator } from '../../../src/modules/simulator/domain/simulator.entity';
@@ -406,5 +408,49 @@ describe('RemoveTrackStepUseCase', () => {
       useCase.execute(learnerCtx, { trackId: 'track-1', stepId: 'a' }),
     ).rejects.toThrow(UnauthorizedError);
     expect(stepRepo.removeAndRecompact).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ListTracksUseCase / GetTrackDetailUseCase — read models (Phase 5 authoring UI)
+// ---------------------------------------------------------------------------
+
+describe('ListTracksUseCase', () => {
+  it('returns all tracks for the tenant academy (read-only, no assertRole)', async () => {
+    const track = makeTrack();
+    const trackRepo = makeTrackRepo({ findByAcademy: vi.fn().mockResolvedValue([track]) });
+    const useCase = new ListTracksUseCase(trackRepo);
+
+    const tracks = await useCase.execute(learnerCtx);
+
+    expect(tracks).toEqual([track]);
+    expect(trackRepo.findByAcademy).toHaveBeenCalledWith(learnerCtx, learnerCtx.orgId);
+  });
+});
+
+describe('GetTrackDetailUseCase', () => {
+  it('returns the track plus its ordered steps', async () => {
+    const track = makeTrack();
+    const step = makeStep();
+    const trackRepo = makeTrackRepo({ findById: vi.fn().mockResolvedValue(track) });
+    const stepRepo = makeStepRepo({ findByTrack: vi.fn().mockResolvedValue([step]) });
+    const useCase = new GetTrackDetailUseCase(trackRepo, stepRepo);
+
+    const detail = await useCase.execute(adminCtx, 'track-1');
+
+    expect(detail).toEqual({ track, steps: [step] });
+    expect(trackRepo.findById).toHaveBeenCalledWith(adminCtx, 'track-1');
+    expect(stepRepo.findByTrack).toHaveBeenCalledWith(adminCtx, 'track-1');
+  });
+
+  it('returns null when the track does not exist (or belongs to another academy) WITHOUT reading steps', async () => {
+    const trackRepo = makeTrackRepo({ findById: vi.fn().mockResolvedValue(null) });
+    const stepRepo = makeStepRepo();
+    const useCase = new GetTrackDetailUseCase(trackRepo, stepRepo);
+
+    const detail = await useCase.execute(adminCtx, 'missing');
+
+    expect(detail).toBeNull();
+    expect(stepRepo.findByTrack).not.toHaveBeenCalled();
   });
 });
