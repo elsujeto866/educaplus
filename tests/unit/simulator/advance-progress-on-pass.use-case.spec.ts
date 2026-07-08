@@ -100,8 +100,7 @@ describe('AdvanceProgressOnPassUseCase', () => {
     };
     progressRepo = {
       findByTrackAndUser: vi.fn().mockResolvedValue(makeProgress({ highestUnlockedPosition: 2 })),
-      create: vi.fn().mockResolvedValue(undefined),
-      update: vi.fn().mockResolvedValue(undefined),
+      upsertAdvance: vi.fn().mockImplementation((_ctx, progress) => Promise.resolve(progress)),
     };
     useCase = new AdvanceProgressOnPassUseCase(stepRepo, attemptRepo, progressRepo);
   });
@@ -113,8 +112,7 @@ describe('AdvanceProgressOnPassUseCase', () => {
 
     expect(result).toBeNull();
     expect(attemptRepo.findLatestPassed).not.toHaveBeenCalled();
-    expect(progressRepo.create).not.toHaveBeenCalled();
-    expect(progressRepo.update).not.toHaveBeenCalled();
+    expect(progressRepo.upsertAdvance).not.toHaveBeenCalled();
   });
 
   it('no-passed-attempt: returns null and creates no row when the caller has never passed (owner-only pass-gate)', async () => {
@@ -123,8 +121,7 @@ describe('AdvanceProgressOnPassUseCase', () => {
     const result = await useCase.execute(learnerCtx, makeInput());
 
     expect(result).toBeNull();
-    expect(progressRepo.create).not.toHaveBeenCalled();
-    expect(progressRepo.update).not.toHaveBeenCalled();
+    expect(progressRepo.upsertAdvance).not.toHaveBeenCalled();
   });
 
   it('OWNER-ONLY: the pass-gate is scoped to ctx.userId, never an input-supplied user', async () => {
@@ -134,18 +131,22 @@ describe('AdvanceProgressOnPassUseCase', () => {
     expect(progressRepo.findByTrackAndUser).toHaveBeenCalledWith(learnerCtx, 'track-1', 'user_1');
   });
 
-  it('frontier-match: advances the frontier by exactly 1 and persists via update() when a row already exists', async () => {
+  it('frontier-match: advances the frontier by exactly 1 and persists via a SINGLE monotonic upsertAdvance() call when a row already exists', async () => {
     progressRepo.findByTrackAndUser = vi.fn().mockResolvedValue(makeProgress({ highestUnlockedPosition: 2 }));
 
     const result = await useCase.execute(learnerCtx, makeInput());
 
     expect(result).not.toBeNull();
     expect(result?.highestUnlockedPosition).toBe(3);
-    expect(progressRepo.update).toHaveBeenCalledOnce();
-    expect(progressRepo.create).not.toHaveBeenCalled();
+    expect(progressRepo.upsertAdvance).toHaveBeenCalledOnce();
+    const [, persisted] = (progressRepo.upsertAdvance as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      TenantContext,
+      SimulatorTrackProgress,
+    ];
+    expect(persisted.highestUnlockedPosition).toBe(3);
   });
 
-  it('frontier-match with NO existing row (implicit frontier 1, step 1): creates the first progress row at position 2', async () => {
+  it('frontier-match with NO existing row (implicit frontier 1, step 1): upserts the first progress row at position 2', async () => {
     stepRepo.findBySimulator = vi.fn().mockResolvedValue(makeStep({ id: 'step-1', simulatorId: 'sim-1', position: 1 }));
     progressRepo.findByTrackAndUser = vi.fn().mockResolvedValue(null);
 
@@ -154,8 +155,7 @@ describe('AdvanceProgressOnPassUseCase', () => {
     expect(result).not.toBeNull();
     expect(result?.id).toBe('progress-new');
     expect(result?.highestUnlockedPosition).toBe(2);
-    expect(progressRepo.create).toHaveBeenCalledOnce();
-    expect(progressRepo.update).not.toHaveBeenCalled();
+    expect(progressRepo.upsertAdvance).toHaveBeenCalledOnce();
   });
 
   it('already-passed idempotent no-op: passing step N again when N+1 is already unlocked does not advance further, no repo write', async () => {
@@ -166,8 +166,7 @@ describe('AdvanceProgressOnPassUseCase', () => {
     const result = await useCase.execute(learnerCtx, makeInput());
 
     expect(result?.highestUnlockedPosition).toBe(3);
-    expect(progressRepo.create).not.toHaveBeenCalled();
-    expect(progressRepo.update).not.toHaveBeenCalled();
+    expect(progressRepo.upsertAdvance).not.toHaveBeenCalled();
   });
 
   it('defensive no-op: a step AHEAD of the frontier (unreachable in practice) does not advance', async () => {
@@ -176,41 +175,27 @@ describe('AdvanceProgressOnPassUseCase', () => {
     const result = await useCase.execute(learnerCtx, makeInput());
 
     expect(result?.highestUnlockedPosition).toBe(1);
-    expect(progressRepo.create).not.toHaveBeenCalled();
-    expect(progressRepo.update).not.toHaveBeenCalled();
+    expect(progressRepo.upsertAdvance).not.toHaveBeenCalled();
   });
 
-  it('race: a unique-violation (23505) on create re-reads and returns the winning row instead of surfacing the DB error', async () => {
-    stepRepo.findBySimulator = vi.fn().mockResolvedValue(makeStep({ id: 'step-1', simulatorId: 'sim-1', position: 1 }));
-    const raced = makeProgress({ id: 'progress-raced', highestUnlockedPosition: 2 });
-    let callCount = 0;
-    progressRepo.findByTrackAndUser = vi.fn().mockImplementation(() => {
-      callCount += 1;
-      return Promise.resolve(callCount === 1 ? null : raced);
-    });
-    progressRepo.create = vi
-      .fn()
-      .mockRejectedValue(Object.assign(new Error('duplicate key value'), { code: '23505' }));
-
-    const result = await useCase.execute(learnerCtx, makeInput({ simulatorId: 'sim-1' }));
-
-    expect(result).toBe(raced);
-    expect(progressRepo.findByTrackAndUser).toHaveBeenCalledTimes(2);
-  });
-
-  it('re-throws non-unique-violation errors from create', async () => {
-    stepRepo.findBySimulator = vi.fn().mockResolvedValue(makeStep({ id: 'step-1', simulatorId: 'sim-1', position: 1 }));
-    progressRepo.findByTrackAndUser = vi.fn().mockResolvedValue(null);
-    progressRepo.create = vi.fn().mockRejectedValue(new Error('connection lost'));
-
-    await expect(useCase.execute(learnerCtx, makeInput({ simulatorId: 'sim-1' }))).rejects.toThrow(
-      'connection lost',
-    );
-  });
-
-  it('re-throws non-unique-violation errors from update', async () => {
+  it('MONOTONIC: returns whatever upsertAdvance persists, even if a concurrent write already advanced the frontier further (GREATEST wins at the DB level, not the locally computed value)', async () => {
+    // A concurrent overlapping call already pushed the frontier past what
+    // this call locally computed — the repo's GREATEST-based upsert is the
+    // source of truth, so the use-case must return what upsertAdvance
+    // resolves with, not silently trust its own locally-advanced candidate.
     progressRepo.findByTrackAndUser = vi.fn().mockResolvedValue(makeProgress({ highestUnlockedPosition: 2 }));
-    progressRepo.update = vi.fn().mockRejectedValue(new Error('connection lost'));
+    const persistedByConcurrentWinner = makeProgress({ highestUnlockedPosition: 5 });
+    progressRepo.upsertAdvance = vi.fn().mockResolvedValue(persistedByConcurrentWinner);
+
+    const result = await useCase.execute(learnerCtx, makeInput());
+
+    expect(result).toBe(persistedByConcurrentWinner);
+    expect(result?.highestUnlockedPosition).toBe(5);
+  });
+
+  it('re-throws errors from upsertAdvance', async () => {
+    progressRepo.findByTrackAndUser = vi.fn().mockResolvedValue(makeProgress({ highestUnlockedPosition: 2 }));
+    progressRepo.upsertAdvance = vi.fn().mockRejectedValue(new Error('connection lost'));
 
     await expect(useCase.execute(learnerCtx, makeInput())).rejects.toThrow('connection lost');
   });

@@ -95,8 +95,7 @@ describe('GetTrackForLearnerUseCase', () => {
     };
     progressRepo = {
       findByTrackAndUser: vi.fn().mockResolvedValue(null),
-      create: vi.fn(),
-      update: vi.fn(),
+      upsertAdvance: vi.fn().mockImplementation((_ctx, progress) => Promise.resolve(progress)),
     };
     // Real AdvanceProgressOnPassUseCase wired to the SAME fake repos — this
     // exercises the actual reconciliation seam, not a mock of it.
@@ -162,7 +161,7 @@ describe('GetTrackForLearnerUseCase', () => {
       { stepId: 'step-2', simulatorId: 'sim-2', position: 2, status: 'unlocked' },
       { stepId: 'step-3', simulatorId: 'sim-3', position: 3, status: 'locked' },
     ]);
-    expect(progressRepo.create).toHaveBeenCalledOnce();
+    expect(progressRepo.upsertAdvance).toHaveBeenCalledOnce();
   });
 
   it('returns the track entity alongside the step views', async () => {

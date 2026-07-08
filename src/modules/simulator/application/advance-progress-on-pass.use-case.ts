@@ -4,13 +4,6 @@ import type { SimulatorTrackStepRepository } from '../domain/ports/simulator-tra
 import type { SimulatorAttemptRepository } from '../domain/ports/simulator-attempt.repository';
 import type { SimulatorTrackProgressRepository } from '../domain/ports/simulator-track-progress.repository';
 
-/** Postgres unique-violation SQLSTATE — duck-typed, no infra import (mirrors IssueSimulatorCertificateUseCase). */
-const UNIQUE_VIOLATION_CODE = '23505';
-
-function isUniqueViolation(err: unknown): boolean {
-  return typeof err === 'object' && err !== null && (err as { code?: unknown }).code === UNIQUE_VIOLATION_CODE;
-}
-
 export interface AdvanceProgressOnPassInput {
   simulatorId: string;
   /**
@@ -24,9 +17,8 @@ export interface AdvanceProgressOnPassInput {
 }
 
 /**
- * AdvanceProgressOnPassUseCase — mirrors `IssueSimulatorCertificateUseCase`
- * verbatim (design.md "Progression triggered lazily on track-map view"), but
- * for the frontier integer instead of an immutable certificate row.
+ * AdvanceProgressOnPassUseCase (design.md "Progression triggered lazily on
+ * track-map view") — advances the learner's frontier integer for a track.
  *
  * Invoked AFTER a passed submission (or lazily, on-view, from
  * `GetTrackForLearnerUseCase`) — NEVER embedded inside `SubmitAttemptUseCase`
@@ -43,12 +35,15 @@ export interface AdvanceProgressOnPassInput {
  *      only start/pass the currently-unlocked step. If `step.position !==
  *      frontier`, no-op either way (already advanced past it — idempotent
  *      re-pass — or, defensively, ahead of it — unreachable in practice).
- *      Otherwise `advanceTo(frontier + 1)` and persist (create if this is
- *      the learner's first-ever row, update otherwise).
- *   5. Race safety: unique(track_id, clerk_user_id) may reject a concurrent
- *      first insert — re-read and return the winning row instead of
- *      surfacing the DB error (mirrors the certificate use-case's
- *      `isUniqueViolation` recovery).
+ *      Otherwise `advanceTo(frontier + 1)` and persist via
+ *      `progressRepo.upsertAdvance` — a SINGLE monotonic upsert (creates the
+ *      row if this is the learner's first-ever advance, or advances an
+ *      existing one), never a separate create/update pair.
+ *   5. Race safety: `upsertAdvance` is a DB-level `GREATEST`-based upsert on
+ *      `unique(track_id, clerk_user_id)` — it can never regress the
+ *      persisted frontier even under two overlapping calls, so the use-case
+ *      returns exactly what the repository persisted (the source of truth),
+ *      not its own locally-computed candidate.
  */
 export class AdvanceProgressOnPassUseCase {
   constructor(
@@ -91,18 +86,6 @@ export class AdvanceProgressOnPassUseCase {
       });
     const advanced = candidate.advanceTo(frontier + 1, now);
 
-    try {
-      if (existing) {
-        await this.progressRepo.update(ctx, advanced);
-      } else {
-        await this.progressRepo.create(ctx, advanced);
-      }
-      return advanced;
-    } catch (err) {
-      if (isUniqueViolation(err)) {
-        return this.progressRepo.findByTrackAndUser(ctx, step.trackId, ctx.userId);
-      }
-      throw err;
-    }
+    return this.progressRepo.upsertAdvance(ctx, advanced);
   }
 }
