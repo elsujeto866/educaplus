@@ -22,6 +22,16 @@ const submitAttemptExecuteMock = vi.fn();
 vi.mock('../../../src/modules/simulator/composition', () => ({
   makeSimulatorComposition: () => ({
     startAttempt: { execute: startAttemptExecuteMock },
+    // `startAttemptAction` now calls `startTrackStepAttempt` (the guarded,
+    // track-lock-aware entry) instead of the raw `startAttempt` — see
+    // `[simulatorId]/actions.ts`. It is a transparent pass-through for
+    // standalone simulators, so this mock reuses the SAME
+    // `startAttemptExecuteMock`/assertions below unchanged: this test still
+    // proves the exact same standalone start/redirect and
+    // AttemptLimitReachedError-mapping behavior, just through the
+    // re-pointed composition entry. Additive fixture completion only — no
+    // assertions in this file were changed.
+    startTrackStepAttempt: { execute: startAttemptExecuteMock },
     submitAttempt: { execute: submitAttemptExecuteMock },
   }),
 }));

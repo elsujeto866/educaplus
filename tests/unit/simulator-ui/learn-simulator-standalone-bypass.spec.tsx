@@ -24,11 +24,15 @@ vi.mock('../../../src/shared/infrastructure/auth/clerk', () => ({
 const listPublishedSimulatorsExecuteMock = vi.fn();
 const getPublishedSimulatorExecuteMock = vi.fn();
 const getTrackStepBySimulatorExecuteMock = vi.fn();
+const startAttemptExecuteMock = vi.fn();
+const startTrackStepAttemptExecuteMock = vi.fn();
 vi.mock('../../../src/modules/simulator/composition', () => ({
   makeSimulatorComposition: () => ({
     listPublishedSimulators: { execute: listPublishedSimulatorsExecuteMock },
     getPublishedSimulator: { execute: getPublishedSimulatorExecuteMock },
     getTrackStepBySimulator: { execute: getTrackStepBySimulatorExecuteMock },
+    startAttempt: { execute: startAttemptExecuteMock },
+    startTrackStepAttempt: { execute: startTrackStepAttemptExecuteMock },
   }),
 }));
 
@@ -40,8 +44,13 @@ class FakeNotFoundSignal extends Error {}
 const notFoundMock = vi.fn(() => {
   throw new FakeNotFoundSignal('NEXT_NOT_FOUND');
 });
+class FakeRedirectSignal extends Error {}
+const redirectMock = vi.fn((_path: string) => {
+  throw new FakeRedirectSignal('NEXT_REDIRECT');
+});
 vi.mock('next/navigation', () => ({
   notFound: () => notFoundMock(),
+  redirect: (path: string) => redirectMock(path),
 }));
 
 const studentCtx: TenantContext = { orgId: 'org_A', userId: 'user_1', role: 'student' };
@@ -120,5 +129,76 @@ describe('Standalone learner detail — track-step bypass fix', () => {
 
     expect(screen.getByText('Simulacro suelto')).toBeInTheDocument();
     expect(notFoundMock).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * ENDPOINT-level guard tests — Phase 6 fix (HIGH ship-blocker).
+ *
+ * The catalog/detail exclusion above only hides the UI path to a track-step
+ * simulator's standalone start button; it does NOT, by itself, prove the
+ * `startAttemptAction` ENDPOINT rejects a locked step. Framework bound-arg
+ * encryption and UI hiding are not an authorization boundary — any future
+ * change that reaches this action directly (e.g. a raw `simulatorId` form
+ * input, a client replay of a captured request) would bypass gamified
+ * progression entirely if the endpoint itself trusted the caller. These
+ * tests drive `startAttemptAction` DIRECTLY, independent of any page/UI
+ * behavior, proving the endpoint is authoritative on its own.
+ */
+const studentActionCtx: TenantContext = { orgId: 'org_A', userId: 'user_1', role: 'student' };
+const initialActionState = { ok: true } as const;
+
+describe('startAttemptAction — endpoint-level guard (not just UI hiding)', () => {
+  beforeEach(() => {
+    getTenantContextMock.mockReset().mockResolvedValue(studentActionCtx);
+    startAttemptExecuteMock.mockReset();
+    startTrackStepAttemptExecuteMock.mockReset();
+    redirectMock.mockClear();
+  });
+
+  it('SECURITY — rejects starting an attempt on a LOCKED track step via the raw endpoint, with no redirect', async () => {
+    // The raw, ungated use-case would happily start an attempt if it were
+    // still what the action called (this is the vulnerability being
+    // fixed) — mocked here to prove the action no longer reaches it.
+    startAttemptExecuteMock.mockResolvedValue({ id: 'attempt-should-never-exist' });
+    const locked = new Error('Simulator "sim-track-step" is locked for this learner');
+    locked.name = 'StepLockedError';
+    startTrackStepAttemptExecuteMock.mockRejectedValue(locked);
+
+    const { startAttemptAction } = await import(
+      '../../../src/app/dashboard/learn/simulators/[simulatorId]/actions'
+    );
+
+    const result = await startAttemptAction('sim-track-step', initialActionState, new FormData());
+
+    expect(result).toEqual({
+      ok: false,
+      error: 'Todavía no desbloqueaste este paso. Superá el paso anterior primero.',
+    });
+    expect(redirectMock).not.toHaveBeenCalled();
+    expect(startTrackStepAttemptExecuteMock).toHaveBeenCalledWith(
+      studentActionCtx,
+      expect.objectContaining({ simulatorId: 'sim-track-step' }),
+    );
+  });
+
+  it('still starts and redirects normally for a standalone (non-track) simulator through the re-pointed action', async () => {
+    startTrackStepAttemptExecuteMock.mockResolvedValue({ id: 'attempt-standalone' });
+
+    const { startAttemptAction } = await import(
+      '../../../src/app/dashboard/learn/simulators/[simulatorId]/actions'
+    );
+
+    await expect(
+      startAttemptAction('sim-standalone', initialActionState, new FormData()),
+    ).rejects.toThrow(FakeRedirectSignal);
+
+    expect(startTrackStepAttemptExecuteMock).toHaveBeenCalledWith(
+      studentActionCtx,
+      expect.objectContaining({ simulatorId: 'sim-standalone' }),
+    );
+    expect(redirectMock).toHaveBeenCalledWith(
+      '/dashboard/learn/simulators/sim-standalone/attempt/attempt-standalone',
+    );
   });
 });

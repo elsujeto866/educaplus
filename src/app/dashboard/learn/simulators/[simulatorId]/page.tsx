@@ -34,13 +34,17 @@ export default async function SimulatorDetailPage({ params }: SimulatorDetailPag
   const simulator = await composition.getPublishedSimulator.execute(ctx, simulatorId);
   if (!simulator) notFound();
 
-  // Phase 6 BYPASS FIX: also 404s any simulator that is a step of a
-  // gamified track (`getTrackStepBySimulator`), regardless of that step's
-  // lock status for this learner — same rationale as the catalog page. This
-  // is the route that renders `StartAttemptButton` (bound to the shipped,
-  // ungated `startAttemptAction`), so hiding it here closes the exploit
-  // server-side: if this page 404s, that button — and its bound Server
-  // Action reference — is never sent to the client at all.
+  // Phase 6 BYPASS FIX (defense-in-depth, not the security boundary): also
+  // 404s any simulator that is a step of a gamified track
+  // (`getTrackStepBySimulator`), regardless of that step's lock status for
+  // this learner — same rationale as the catalog page. This keeps the
+  // standalone route scoped to standalone simulators and steers learners
+  // toward the track level-map UI. The ACTUAL authorization boundary is
+  // server-side in `startAttemptAction` itself, which now calls the
+  // track-lock-aware `StartTrackStepAttemptUseCase` — it independently
+  // rejects a locked step even if this page (or any other caller) is
+  // reached directly, so hiding this route is a UX nicety, not what makes
+  // the endpoint safe.
   const trackStep = await composition.getTrackStepBySimulator.execute(ctx, simulatorId);
   if (trackStep) notFound();
 
