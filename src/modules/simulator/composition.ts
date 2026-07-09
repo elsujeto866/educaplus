@@ -40,6 +40,8 @@ export type { TrackDetailView } from './application/get-track-detail.use-case';
 import { AdvanceProgressOnPassUseCase } from './application/advance-progress-on-pass.use-case';
 import { GetTrackForLearnerUseCase } from './application/get-track-for-learner.use-case';
 export type { TrackForLearnerView, TrackStepView, TrackStepStatus } from './application/get-track-for-learner.use-case';
+import { GetTrackStepBySimulatorUseCase } from './application/get-track-step-by-simulator.use-case';
+import { StartTrackStepAttemptUseCase } from './application/start-track-step-attempt.use-case';
 import { ImportQuestionsFromCsvUseCase } from './application/import-questions-from-csv.use-case';
 import { Rfc4180CsvQuestionSource } from './infrastructure/rfc4180-csv-question-source.adapter';
 
@@ -74,6 +76,8 @@ export interface SimulatorComposition {
   unpublishTrack: UnpublishTrackUseCase;
   advanceProgressOnPass: AdvanceProgressOnPassUseCase;
   getTrackForLearner: GetTrackForLearnerUseCase;
+  getTrackStepBySimulator: GetTrackStepBySimulatorUseCase;
+  startTrackStepAttempt: StartTrackStepAttemptUseCase;
   importQuestionsFromCsv: ImportQuestionsFromCsvUseCase;
 }
 
@@ -100,6 +104,7 @@ export function makeSimulatorComposition(): SimulatorComposition {
     attemptRepo,
     trackProgressRepo,
   );
+  const startAttemptUseCase = new StartAttemptUseCase(simulatorRepo, questionRepo, attemptRepo, rng);
   const csvSource = new Rfc4180CsvQuestionSource();
 
   return {
@@ -119,7 +124,7 @@ export function makeSimulatorComposition(): SimulatorComposition {
     getSimulator: new GetSimulatorUseCase(simulatorRepo),
     listPublishedSimulators: new ListPublishedSimulatorsUseCase(simulatorRepo),
     getPublishedSimulator: new GetPublishedSimulatorUseCase(simulatorRepo),
-    startAttempt: new StartAttemptUseCase(simulatorRepo, questionRepo, attemptRepo, rng),
+    startAttempt: startAttemptUseCase,
     submitAttempt: new SubmitAttemptUseCase(attemptRepo, simulatorRepo),
     getAttempt: new GetAttemptUseCase(attemptRepo, simulatorRepo),
     issueSimulatorCertificate: new IssueSimulatorCertificateUseCase(attemptRepo, certificateRepo),
@@ -138,6 +143,8 @@ export function makeSimulatorComposition(): SimulatorComposition {
       trackProgressRepo,
       advanceProgressOnPassUseCase,
     ),
+    getTrackStepBySimulator: new GetTrackStepBySimulatorUseCase(trackStepRepo),
+    startTrackStepAttempt: new StartTrackStepAttemptUseCase(trackStepRepo, trackProgressRepo, startAttemptUseCase),
     importQuestionsFromCsv: new ImportQuestionsFromCsvUseCase(questionRepo, csvSource, bankRepo),
   };
 }

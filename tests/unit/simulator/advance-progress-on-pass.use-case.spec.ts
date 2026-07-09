@@ -90,6 +90,7 @@ describe('AdvanceProgressOnPassUseCase', () => {
       countByTrack: vi.fn(),
       deleteById: vi.fn(),
       replacePositions: vi.fn(),
+      removeAndRecompact: vi.fn(),
     };
     attemptRepo = {
       create: vi.fn(),

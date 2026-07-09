@@ -92,6 +92,7 @@ describe('GetTrackForLearnerUseCase', () => {
       countByTrack: vi.fn(),
       deleteById: vi.fn(),
       replacePositions: vi.fn(),
+      removeAndRecompact: vi.fn(),
     };
     progressRepo = {
       findByTrackAndUser: vi.fn().mockResolvedValue(null),

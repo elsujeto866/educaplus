@@ -42,6 +42,8 @@ const DOMAIN_ERROR_MESSAGES: Record<string, string> = {
   TrackStepPositionConflictError: 'Otro paso ya ocupa esa posición. Probá de nuevo.',
   // Gamified Tracks — track publish/unpublish (Phase 5.4).
   EmptyTrackError: 'Esta pista todavía no tiene pasos y no se puede publicar.',
+  // Gamified Tracks — learner level-map + locked-step gate (Phase 6).
+  StepLockedError: 'Todavía no desbloqueaste este paso. Superá el paso anterior primero.',
 };
 
 /** Extracts the first Zod issue message, falling back to a generic one. */
