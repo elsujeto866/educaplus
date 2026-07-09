@@ -12,6 +12,7 @@ import { BankEditForm } from './_components/bank-edit-form';
 import { BankDeleteAction } from './_components/bank-delete-action';
 import { QuestionFormCard } from './_components/question-form-card';
 import { QuestionList } from './_components/question-list';
+import { CsvImportForm } from './_components/csv-import-form';
 
 interface BankDetailPageProps {
   params: Promise<{ bankId: string }>;
@@ -58,6 +59,7 @@ export default async function BankDetailPage({ params }: BankDetailPageProps) {
         <BankDeleteAction bankId={detail.bank.id} />
         <QuestionList bankId={detail.bank.id} questions={detail.questions} />
         <QuestionFormCard bankId={detail.bank.id} mode="add" />
+        <CsvImportForm bankId={detail.bank.id} />
       </div>
     </AppShell>
   );
