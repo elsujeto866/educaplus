@@ -21,6 +21,8 @@ const addSimulatorToTrackStepExecuteMock = vi.fn();
 const removeTrackStepExecuteMock = vi.fn();
 const reorderTrackStepsExecuteMock = vi.fn();
 const getTrackDetailExecuteMock = vi.fn();
+const publishTrackExecuteMock = vi.fn();
+const unpublishTrackExecuteMock = vi.fn();
 vi.mock('../../../src/modules/simulator/composition', () => ({
   makeSimulatorComposition: () => ({
     createTrack: { execute: createTrackExecuteMock },
@@ -28,6 +30,8 @@ vi.mock('../../../src/modules/simulator/composition', () => ({
     removeTrackStep: { execute: removeTrackStepExecuteMock },
     reorderTrackSteps: { execute: reorderTrackStepsExecuteMock },
     getTrackDetail: { execute: getTrackDetailExecuteMock },
+    publishTrack: { execute: publishTrackExecuteMock },
+    unpublishTrack: { execute: unpublishTrackExecuteMock },
   }),
 }));
 
@@ -62,6 +66,8 @@ beforeEach(() => {
   removeTrackStepExecuteMock.mockReset();
   reorderTrackStepsExecuteMock.mockReset();
   getTrackDetailExecuteMock.mockReset();
+  publishTrackExecuteMock.mockReset();
+  unpublishTrackExecuteMock.mockReset();
   revalidatePathMock.mockClear();
   redirectMock.mockClear();
 });
@@ -201,6 +207,45 @@ describe('reorderTrackStepDownAction', () => {
       trackId,
       orderedStepIds: ['s-1', 's-3', 's-2'],
     });
+    expect(revalidatePathMock).toHaveBeenCalledWith(`/dashboard/simulators/tracks/${trackId}`);
+  });
+});
+
+describe('publishTrackAction', () => {
+  it('publishes and revalidates the track builder page on success', async () => {
+    publishTrackExecuteMock.mockResolvedValue({ id: trackId, status: 'published' });
+    const { publishTrackAction } = await import('../../../src/app/dashboard/simulators/tracks/actions');
+
+    const result = await publishTrackAction(trackId, initialState, new FormData());
+
+    expect(result).toEqual({ ok: true });
+    expect(publishTrackExecuteMock).toHaveBeenCalledWith(instructorCtx, { id: trackId });
+    expect(revalidatePathMock).toHaveBeenCalledWith(`/dashboard/simulators/tracks/${trackId}`);
+  });
+
+  it('maps EmptyTrackError to a Spanish ActionResult (empty-track publish guard)', async () => {
+    const empty = new Error('Simulator track "track-1" has no steps and cannot be published');
+    empty.name = 'EmptyTrackError';
+    publishTrackExecuteMock.mockRejectedValue(empty);
+    const { publishTrackAction } = await import('../../../src/app/dashboard/simulators/tracks/actions');
+
+    const result = await publishTrackAction(trackId, initialState, new FormData());
+
+    expect(result).toEqual({
+      ok: false,
+      error: 'Esta pista todavía no tiene pasos y no se puede publicar.',
+    });
+  });
+});
+
+describe('unpublishTrackAction', () => {
+  it('unpublishes and revalidates the track builder page (fire-and-forget, no rejection path)', async () => {
+    unpublishTrackExecuteMock.mockResolvedValue({ id: trackId, status: 'draft' });
+    const { unpublishTrackAction } = await import('../../../src/app/dashboard/simulators/tracks/actions');
+
+    await unpublishTrackAction(trackId, new FormData());
+
+    expect(unpublishTrackExecuteMock).toHaveBeenCalledWith(instructorCtx, { id: trackId });
     expect(revalidatePathMock).toHaveBeenCalledWith(`/dashboard/simulators/tracks/${trackId}`);
   });
 });

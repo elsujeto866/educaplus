@@ -162,3 +162,33 @@ export async function reorderTrackStepDownAction(
 ): Promise<void> {
   await reorderTrackStep(trackId, stepId, 'down');
 }
+
+/**
+ * Uses `useActionState` (unlike unpublish below) because `PublishTrackUseCase`
+ * has a real, user-facing rejection path — `EmptyTrackError` (a track with
+ * zero steps cannot be published) — that must surface an inline Spanish
+ * message. Mirrors `publishSimulatorAction`'s rationale exactly.
+ */
+export async function publishTrackAction(
+  trackId: string,
+  _prevState: ActionResult,
+  _formData: FormData,
+): Promise<ActionResult> {
+  const ctx = await getTenantContext();
+
+  try {
+    await makeSimulatorComposition().publishTrack.execute(ctx, { id: trackId });
+  } catch (error) {
+    return toActionError(error);
+  }
+
+  revalidatePath(`/dashboard/simulators/tracks/${trackId}`);
+  return { ok: true };
+}
+
+/** Fire-and-forget — unpublish never has a rejection path. Mirrors `unpublishSimulatorAction`. */
+export async function unpublishTrackAction(trackId: string, _formData: FormData): Promise<void> {
+  const ctx = await getTenantContext();
+  await makeSimulatorComposition().unpublishTrack.execute(ctx, { id: trackId });
+  revalidatePath(`/dashboard/simulators/tracks/${trackId}`);
+}

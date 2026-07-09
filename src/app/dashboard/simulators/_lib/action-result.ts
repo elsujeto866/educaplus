@@ -40,6 +40,8 @@ const DOMAIN_ERROR_MESSAGES: Record<string, string> = {
   SimulatorAlreadyInTrackError: 'Este simulacro ya está asignado a otra pista.',
   SimulatorNotPublishedError: 'Solo se pueden agregar simulacros publicados a una pista.',
   TrackStepPositionConflictError: 'Otro paso ya ocupa esa posición. Probá de nuevo.',
+  // Gamified Tracks — track publish/unpublish (Phase 5.4).
+  EmptyTrackError: 'Esta pista todavía no tiene pasos y no se puede publicar.',
 };
 
 /** Extracts the first Zod issue message, falling back to a generic one. */

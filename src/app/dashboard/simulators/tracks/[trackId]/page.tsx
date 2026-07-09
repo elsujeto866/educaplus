@@ -11,6 +11,7 @@ import { TracksNavLink } from '../../_lib/tracks-nav-link';
 import { requireInstructor } from '../../_lib/require-instructor';
 import { TrackStepRow } from './_components/track-step-row';
 import { AddTrackStepForm } from './_components/add-track-step-form';
+import { TrackStatusActions } from './_components/track-status-actions';
 
 interface TrackBuilderPageProps {
   params: Promise<{ trackId: string }>;
@@ -69,6 +70,8 @@ export default async function TrackBuilderPage({ params }: TrackBuilderPageProps
           title={detail.track.title}
           subtitle={detail.track.description ?? 'Ordená los pasos de esta pista.'}
         />
+
+        <TrackStatusActions trackId={trackId} status={detail.track.status} />
 
         <section className="flex flex-col gap-3">
           <h2 className="text-base font-semibold text-foreground">Pasos</h2>

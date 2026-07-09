@@ -261,6 +261,19 @@ export class TrackStepPositionConflictError extends Error {
 }
 
 /**
+ * Thrown by PublishTrackUseCase (Phase 5.4 — track publish/unpublish,
+ * mirrors `InsufficientQuestionPoolError`'s publish-time gate) when the
+ * track has zero steps. A track with no steps has nothing to progress
+ * through, so it must never be published in an empty state.
+ */
+export class EmptyTrackError extends Error {
+  constructor(trackId: string) {
+    super(`Simulator track "${trackId}" has no steps and cannot be published`);
+    this.name = 'EmptyTrackError';
+  }
+}
+
+/**
  * Thrown by the progression seam (Phase 3 — GetTrackForLearnerUseCase /
  * the track-aware start/submit gate) when a learner attempts to start or
  * submit an attempt on a step that has not yet been unlocked for them

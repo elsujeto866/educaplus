@@ -34,6 +34,8 @@ import { ReorderTrackStepsUseCase } from './application/reorder-track-steps.use-
 import { RemoveTrackStepUseCase } from './application/remove-track-step.use-case';
 import { ListTracksUseCase } from './application/list-tracks.use-case';
 import { GetTrackDetailUseCase } from './application/get-track-detail.use-case';
+import { PublishTrackUseCase } from './application/publish-track.use-case';
+import { UnpublishTrackUseCase } from './application/unpublish-track.use-case';
 export type { TrackDetailView } from './application/get-track-detail.use-case';
 import { AdvanceProgressOnPassUseCase } from './application/advance-progress-on-pass.use-case';
 import { GetTrackForLearnerUseCase } from './application/get-track-for-learner.use-case';
@@ -68,6 +70,8 @@ export interface SimulatorComposition {
   removeTrackStep: RemoveTrackStepUseCase;
   listTracks: ListTracksUseCase;
   getTrackDetail: GetTrackDetailUseCase;
+  publishTrack: PublishTrackUseCase;
+  unpublishTrack: UnpublishTrackUseCase;
   advanceProgressOnPass: AdvanceProgressOnPassUseCase;
   getTrackForLearner: GetTrackForLearnerUseCase;
   importQuestionsFromCsv: ImportQuestionsFromCsvUseCase;
@@ -125,6 +129,8 @@ export function makeSimulatorComposition(): SimulatorComposition {
     removeTrackStep: new RemoveTrackStepUseCase(trackRepo, trackStepRepo),
     listTracks: new ListTracksUseCase(trackRepo),
     getTrackDetail: new GetTrackDetailUseCase(trackRepo, trackStepRepo),
+    publishTrack: new PublishTrackUseCase(trackRepo, trackStepRepo),
+    unpublishTrack: new UnpublishTrackUseCase(trackRepo),
     advanceProgressOnPass: advanceProgressOnPassUseCase,
     getTrackForLearner: new GetTrackForLearnerUseCase(
       trackRepo,

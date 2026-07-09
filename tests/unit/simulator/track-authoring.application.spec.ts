@@ -14,6 +14,8 @@ import { ReorderTrackStepsUseCase } from '../../../src/modules/simulator/applica
 import { RemoveTrackStepUseCase } from '../../../src/modules/simulator/application/remove-track-step.use-case';
 import { ListTracksUseCase } from '../../../src/modules/simulator/application/list-tracks.use-case';
 import { GetTrackDetailUseCase } from '../../../src/modules/simulator/application/get-track-detail.use-case';
+import { PublishTrackUseCase } from '../../../src/modules/simulator/application/publish-track.use-case';
+import { UnpublishTrackUseCase } from '../../../src/modules/simulator/application/unpublish-track.use-case';
 import { SimulatorTrack } from '../../../src/modules/simulator/domain/simulator-track.entity';
 import { SimulatorTrackStep } from '../../../src/modules/simulator/domain/simulator-track-step.entity';
 import { Simulator } from '../../../src/modules/simulator/domain/simulator.entity';
@@ -25,6 +27,7 @@ import {
   SimulatorNotPublishedError,
   TrackStepPositionConflictError,
   InvalidSimulatorTrackStepError,
+  EmptyTrackError,
 } from '../../../src/modules/simulator/domain/errors';
 import type { SimulatorTrackRepository } from '../../../src/modules/simulator/domain/ports/simulator-track.repository';
 import type { SimulatorTrackStepRepository } from '../../../src/modules/simulator/domain/ports/simulator-track-step.repository';
@@ -452,5 +455,99 @@ describe('GetTrackDetailUseCase', () => {
 
     expect(detail).toBeNull();
     expect(stepRepo.findByTrack).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PublishTrackUseCase / UnpublishTrackUseCase — track authoring (Phase 5.4).
+// Mirrors PublishSimulatorUseCase/UnpublishSimulatorUseCase verbatim, except
+// the publish-time gate checks step COUNT (via stepRepo.countByTrack)
+// instead of a question pool.
+// ---------------------------------------------------------------------------
+
+describe('PublishTrackUseCase', () => {
+  it('publishes a track that has at least one step', async () => {
+    const trackRepo = makeTrackRepo({ findById: vi.fn().mockResolvedValue(makeTrack()) });
+    const stepRepo = makeStepRepo({ countByTrack: vi.fn().mockResolvedValue(1) });
+    const useCase = new PublishTrackUseCase(trackRepo, stepRepo);
+
+    const published = await useCase.execute(adminCtx, { id: 'track-1' });
+
+    expect(published.status).toBe('published');
+    expect(trackRepo.update).toHaveBeenCalledWith(
+      adminCtx,
+      expect.objectContaining({ id: 'track-1', status: 'published' }),
+    );
+  });
+
+  it('allows instructor to publish a track', async () => {
+    const trackRepo = makeTrackRepo({ findById: vi.fn().mockResolvedValue(makeTrack()) });
+    const stepRepo = makeStepRepo({ countByTrack: vi.fn().mockResolvedValue(2) });
+    const useCase = new PublishTrackUseCase(trackRepo, stepRepo);
+
+    const published = await useCase.execute(instructorCtx, { id: 'track-1' });
+
+    expect(published.status).toBe('published');
+  });
+
+  it('throws SimulatorTrackNotFoundError when the track does not exist', async () => {
+    const trackRepo = makeTrackRepo({ findById: vi.fn().mockResolvedValue(null) });
+    const stepRepo = makeStepRepo();
+    const useCase = new PublishTrackUseCase(trackRepo, stepRepo);
+
+    await expect(useCase.execute(adminCtx, { id: 'missing' })).rejects.toThrow(SimulatorTrackNotFoundError);
+    expect(trackRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('throws EmptyTrackError when the track has zero steps', async () => {
+    const trackRepo = makeTrackRepo({ findById: vi.fn().mockResolvedValue(makeTrack()) });
+    const stepRepo = makeStepRepo({ countByTrack: vi.fn().mockResolvedValue(0) });
+    const useCase = new PublishTrackUseCase(trackRepo, stepRepo);
+
+    await expect(useCase.execute(adminCtx, { id: 'track-1' })).rejects.toThrow(EmptyTrackError);
+    expect(trackRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('throws UnauthorizedError when role is student', async () => {
+    const trackRepo = makeTrackRepo({ findById: vi.fn().mockResolvedValue(makeTrack()) });
+    const stepRepo = makeStepRepo({ countByTrack: vi.fn().mockResolvedValue(1) });
+    const useCase = new PublishTrackUseCase(trackRepo, stepRepo);
+
+    await expect(useCase.execute(learnerCtx, { id: 'track-1' })).rejects.toThrow(UnauthorizedError);
+    expect(trackRepo.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('UnpublishTrackUseCase', () => {
+  it('unpublishes a published track', async () => {
+    const trackRepo = makeTrackRepo({
+      findById: vi.fn().mockResolvedValue(makeTrack({ status: 'published' })),
+    });
+    const useCase = new UnpublishTrackUseCase(trackRepo);
+
+    const unpublished = await useCase.execute(adminCtx, { id: 'track-1' });
+
+    expect(unpublished.status).toBe('draft');
+    expect(trackRepo.update).toHaveBeenCalledWith(
+      adminCtx,
+      expect.objectContaining({ id: 'track-1', status: 'draft' }),
+    );
+  });
+
+  it('throws SimulatorTrackNotFoundError when the track does not exist', async () => {
+    const trackRepo = makeTrackRepo({ findById: vi.fn().mockResolvedValue(null) });
+    const useCase = new UnpublishTrackUseCase(trackRepo);
+
+    await expect(useCase.execute(adminCtx, { id: 'missing' })).rejects.toThrow(SimulatorTrackNotFoundError);
+  });
+
+  it('throws UnauthorizedError when role is student', async () => {
+    const trackRepo = makeTrackRepo({
+      findById: vi.fn().mockResolvedValue(makeTrack({ status: 'published' })),
+    });
+    const useCase = new UnpublishTrackUseCase(trackRepo);
+
+    await expect(useCase.execute(learnerCtx, { id: 'track-1' })).rejects.toThrow(UnauthorizedError);
+    expect(trackRepo.update).not.toHaveBeenCalled();
   });
 });
