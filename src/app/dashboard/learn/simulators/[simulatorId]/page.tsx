@@ -29,9 +29,20 @@ interface SimulatorDetailPageProps {
 export default async function SimulatorDetailPage({ params }: SimulatorDetailPageProps) {
   const { simulatorId } = await params;
   const ctx = await getTenantContext();
+  const composition = makeSimulatorComposition();
 
-  const simulator = await makeSimulatorComposition().getPublishedSimulator.execute(ctx, simulatorId);
+  const simulator = await composition.getPublishedSimulator.execute(ctx, simulatorId);
   if (!simulator) notFound();
+
+  // Phase 6 BYPASS FIX: also 404s any simulator that is a step of a
+  // gamified track (`getTrackStepBySimulator`), regardless of that step's
+  // lock status for this learner — same rationale as the catalog page. This
+  // is the route that renders `StartAttemptButton` (bound to the shipped,
+  // ungated `startAttemptAction`), so hiding it here closes the exploit
+  // server-side: if this page 404s, that button — and its bound Server
+  // Action reference — is never sent to the client at all.
+  const trackStep = await composition.getTrackStepBySimulator.execute(ctx, simulatorId);
+  if (trackStep) notFound();
 
   return (
     <AppShell
