@@ -36,10 +36,10 @@ export default async function LearnerTracksCatalogPage() {
       userSlot={<UserMenu />}
     >
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
-        <PageHeader title="Pistas" subtitle="Rutas de simuladores con desbloqueo progresivo." />
+        <PageHeader title="Rutas de estudio" subtitle="Rutas de simuladores con desbloqueo progresivo." />
         {publishedTracks.length === 0 ? (
           <Card className="text-center text-sm text-muted-foreground">
-            No hay pistas publicadas todavía
+            No hay rutas de estudio publicadas todavía
           </Card>
         ) : (
           <ul className="flex flex-col gap-3">

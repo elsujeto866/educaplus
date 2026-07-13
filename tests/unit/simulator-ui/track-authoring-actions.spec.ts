@@ -233,7 +233,7 @@ describe('publishTrackAction', () => {
 
     expect(result).toEqual({
       ok: false,
-      error: 'Esta pista todavía no tiene pasos y no se puede publicar.',
+      error: 'Esta ruta de estudio todavía no tiene pasos y no se puede publicar.',
     });
   });
 });

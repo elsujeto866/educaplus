@@ -18,7 +18,7 @@ export default async function NewTrackPage() {
   return (
     <AppShell navSlot={<DashboardNav ctx={ctx} />} userSlot={<UserMenu />}>
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
-        <PageHeader title="Crear pista" subtitle="Completá los datos para empezar." />
+        <PageHeader title="Crear ruta de estudio" subtitle="Completá los datos para empezar." />
         <CreateTrackForm />
       </div>
     </AppShell>

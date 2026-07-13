@@ -58,6 +58,6 @@ describe('Learner tracks catalog page', () => {
 
     render(await LearnerTracksCatalogPage());
 
-    expect(screen.getByText(/no hay pistas publicadas/i)).toBeInTheDocument();
+    expect(screen.getByText(/no hay rutas de estudio publicadas/i)).toBeInTheDocument();
   });
 });

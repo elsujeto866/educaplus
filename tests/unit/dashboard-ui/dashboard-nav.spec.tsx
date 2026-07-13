@@ -20,7 +20,7 @@ function ctxWithRole(role: TenantContext['role']): TenantContext {
 }
 
 describe('DashboardNav', () => {
-  it('renders Cursos, Simuladores, and Pistas links for an instructor', () => {
+  it('renders Cursos, Simuladores, and Rutas de estudio links for an instructor', () => {
     render(<DashboardNav ctx={ctxWithRole('instructor')} />);
 
     expect(screen.getByRole('link', { name: 'Cursos' })).toHaveAttribute(
@@ -31,18 +31,18 @@ describe('DashboardNav', () => {
       'href',
       '/dashboard/simulators',
     );
-    expect(screen.getByRole('link', { name: 'Pistas' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Rutas de estudio' })).toHaveAttribute(
       'href',
       '/dashboard/simulators/tracks',
     );
   });
 
-  it('renders Cursos, Simuladores, and Pistas links for an admin', () => {
+  it('renders Cursos, Simuladores, and Rutas de estudio links for an admin', () => {
     render(<DashboardNav ctx={ctxWithRole('admin')} />);
 
     expect(screen.getByRole('link', { name: 'Cursos' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Simuladores' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Pistas' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Rutas de estudio' })).toBeInTheDocument();
   });
 
   it('renders none of the links for a student', () => {

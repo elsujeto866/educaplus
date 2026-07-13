@@ -19,7 +19,7 @@ export function TracksNavLink({ ctx }: TracksNavLinkProps) {
       href="/dashboard/simulators/tracks"
       className="text-sm font-medium text-foreground transition-colors hover:text-primary"
     >
-      Pistas
+      Rutas de estudio
     </Link>
   );
 }

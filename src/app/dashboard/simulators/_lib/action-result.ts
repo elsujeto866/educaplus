@@ -33,15 +33,15 @@ const DOMAIN_ERROR_MESSAGES: Record<string, string> = {
   AttemptAlreadySubmittedError: 'Este intento ya fue entregado y no se puede volver a enviar.',
   InvalidAttemptAnswersError: 'Las respuestas enviadas no son válidas para este intento.',
   // Gamified Tracks — authoring (Phase 5).
-  InvalidSimulatorTrackError: 'Los datos de la pista no son válidos.',
-  SimulatorTrackNotFoundError: 'La pista no existe o no tenés acceso a ella.',
-  InvalidSimulatorTrackStepError: 'El paso de la pista no es válido.',
-  SimulatorTrackStepNotFoundError: 'El paso no existe en esta pista.',
-  SimulatorAlreadyInTrackError: 'Este simulador ya está asignado a otra pista.',
-  SimulatorNotPublishedError: 'Solo se pueden agregar simuladores publicados a una pista.',
+  InvalidSimulatorTrackError: 'Los datos de la ruta de estudio no son válidos.',
+  SimulatorTrackNotFoundError: 'La ruta de estudio no existe o no tenés acceso a ella.',
+  InvalidSimulatorTrackStepError: 'El paso de la ruta de estudio no es válido.',
+  SimulatorTrackStepNotFoundError: 'El paso no existe en esta ruta de estudio.',
+  SimulatorAlreadyInTrackError: 'Este simulador ya está asignado a otra ruta de estudio.',
+  SimulatorNotPublishedError: 'Solo se pueden agregar simuladores publicados a una ruta de estudio.',
   TrackStepPositionConflictError: 'Otro paso ya ocupa esa posición. Probá de nuevo.',
   // Gamified Tracks — track publish/unpublish (Phase 5.4).
-  EmptyTrackError: 'Esta pista todavía no tiene pasos y no se puede publicar.',
+  EmptyTrackError: 'Esta ruta de estudio todavía no tiene pasos y no se puede publicar.',
   // Gamified Tracks — learner level-map + locked-step gate (Phase 6).
   StepLockedError: 'Todavía no desbloqueaste este paso. Superá el paso anterior primero.',
 };

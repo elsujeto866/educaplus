@@ -13,15 +13,15 @@ function ctxWithRole(role: TenantContext['role']): TenantContext {
 }
 
 describe('TracksNavLink', () => {
-  it('renders a "Pistas" link pointing to /dashboard/simulators/tracks for an instructor', () => {
+  it('renders a "Rutas de estudio" link pointing to /dashboard/simulators/tracks for an instructor', () => {
     render(<TracksNavLink ctx={ctxWithRole('instructor')} />);
-    const link = screen.getByRole('link', { name: 'Pistas' });
+    const link = screen.getByRole('link', { name: 'Rutas de estudio' });
     expect(link).toHaveAttribute('href', '/dashboard/simulators/tracks');
   });
 
-  it('renders a "Pistas" link for an admin', () => {
+  it('renders a "Rutas de estudio" link for an admin', () => {
     render(<TracksNavLink ctx={ctxWithRole('admin')} />);
-    expect(screen.getByRole('link', { name: 'Pistas' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Rutas de estudio' })).toBeInTheDocument();
   });
 
   it('renders nothing for a student', () => {

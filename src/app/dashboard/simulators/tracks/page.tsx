@@ -24,22 +24,22 @@ export default async function TracksPage() {
     <AppShell navSlot={<DashboardNav ctx={ctx} />} userSlot={<UserMenu />}>
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <PageHeader
-          title="Pistas gamificadas"
+          title="Rutas de estudio gamificadas"
           subtitle="Encadená simuladores publicados en una ruta con desbloqueo progresivo."
         />
 
         <section className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">Pistas</h2>
+            <h2 className="text-base font-semibold text-foreground">Rutas de estudio</h2>
             <Link
               href="/dashboard/simulators/tracks/new"
               className="text-sm font-medium text-primary hover:underline"
             >
-              Crear pista
+              Crear ruta de estudio
             </Link>
           </div>
           {tracks.length === 0 ? (
-            <Card className="text-center text-sm text-muted-foreground">Todavía no tenés pistas</Card>
+            <Card className="text-center text-sm text-muted-foreground">Todavía no tenés rutas de estudio</Card>
           ) : (
             <ul className="flex flex-col gap-3">
               {tracks.map((track) => (

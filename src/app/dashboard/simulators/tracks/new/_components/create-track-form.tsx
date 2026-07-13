@@ -27,7 +27,7 @@ export function CreateTrackForm() {
         <Textarea id="description" name="description" maxLength={2000} rows={4} disabled={isPending} />
       </FormField>
       <Button type="submit" disabled={isPending}>
-        {isPending ? 'Creando...' : 'Crear pista'}
+        {isPending ? 'Creando...' : 'Crear ruta de estudio'}
       </Button>
     </form>
   );

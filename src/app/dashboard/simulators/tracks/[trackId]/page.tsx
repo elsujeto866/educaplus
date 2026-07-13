@@ -57,7 +57,7 @@ export default async function TrackBuilderPage({ params }: TrackBuilderPageProps
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <PageHeader
           title={detail.track.title}
-          subtitle={detail.track.description ?? 'Ordená los pasos de esta pista.'}
+          subtitle={detail.track.description ?? 'Ordená los pasos de esta ruta de estudio.'}
         />
 
         <TrackStatusActions trackId={trackId} status={detail.track.status} />
@@ -65,7 +65,7 @@ export default async function TrackBuilderPage({ params }: TrackBuilderPageProps
         <section className="flex flex-col gap-3">
           <h2 className="text-base font-semibold text-foreground">Pasos</h2>
           {orderedSteps.length === 0 ? (
-            <Card className="text-center text-sm text-muted-foreground">Esta pista todavía no tiene pasos</Card>
+            <Card className="text-center text-sm text-muted-foreground">Esta ruta de estudio todavía no tiene pasos</Card>
           ) : (
             <div className="flex flex-col gap-3">
               {orderedSteps.map((step, index) => {
