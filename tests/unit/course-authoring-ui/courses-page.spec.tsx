@@ -26,8 +26,8 @@ vi.mock('../../../src/app/dashboard/_components/user-menu', () => ({
   UserMenu: () => null,
 }));
 
-vi.mock('../../../src/app/dashboard/courses/_lib/courses-nav-link', () => ({
-  CoursesNavLink: () => null,
+vi.mock('../../../src/app/dashboard/_components/dashboard-nav', () => ({
+  DashboardNav: () => null,
 }));
 
 const instructorCtx: TenantContext = { orgId: 'org_A', userId: 'user_1', role: 'instructor' };

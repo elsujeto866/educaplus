@@ -5,7 +5,7 @@ import { AppShell } from '@/shared/ui/organisms/app-shell';
 import { PageHeader } from '@/shared/ui/molecules/page-header';
 import { Card } from '@/shared/ui/atoms/card';
 import { UserMenu } from '../_components/user-menu';
-import { CoursesNavLink } from './_lib/courses-nav-link';
+import { DashboardNav } from '../_components/dashboard-nav';
 import { requireInstructor } from './_lib/require-instructor';
 
 // Inline literal union instead of importing `PublicationStatus` from the
@@ -31,7 +31,7 @@ export default async function CoursesPage() {
   const courses = await makeCourseComposition().listCourses.execute(ctx);
 
   return (
-    <AppShell navSlot={<CoursesNavLink ctx={ctx} />} userSlot={<UserMenu />}>
+    <AppShell navSlot={<DashboardNav ctx={ctx} />} userSlot={<UserMenu />}>
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <PageHeader title="Cursos" subtitle="Gestioná los cursos de tu academia." />
         <Link

@@ -5,9 +5,7 @@ import { AppShell } from '@/shared/ui/organisms/app-shell';
 import { PageHeader } from '@/shared/ui/molecules/page-header';
 import { Card } from '@/shared/ui/atoms/card';
 import { UserMenu } from '../../../_components/user-menu';
-import { CoursesNavLink } from '../../../courses/_lib/courses-nav-link';
-import { SimulatorsNavLink } from '../../_lib/simulators-nav-link';
-import { TracksNavLink } from '../../_lib/tracks-nav-link';
+import { DashboardNav } from '../../../_components/dashboard-nav';
 import { requireInstructor } from '../../_lib/require-instructor';
 import { TrackStepRow } from './_components/track-step-row';
 import { AddTrackStepForm } from './_components/add-track-step-form';
@@ -55,16 +53,7 @@ export default async function TrackBuilderPage({ params }: TrackBuilderPageProps
     .map((simulator) => ({ id: simulator.id, title: simulator.title }));
 
   return (
-    <AppShell
-      navSlot={
-        <>
-          <CoursesNavLink ctx={ctx} />
-          <SimulatorsNavLink ctx={ctx} />
-          <TracksNavLink ctx={ctx} />
-        </>
-      }
-      userSlot={<UserMenu />}
-    >
+    <AppShell navSlot={<DashboardNav ctx={ctx} />} userSlot={<UserMenu />}>
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <PageHeader
           title={detail.track.title}

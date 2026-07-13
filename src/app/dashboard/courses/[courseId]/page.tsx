@@ -6,7 +6,7 @@ import { CourseOutlineNav } from '@/shared/ui/organisms/course-outline-nav';
 import { CourseWizardSteps } from '@/shared/ui/molecules/course-wizard-steps';
 import { PageHeader } from '@/shared/ui/molecules/page-header';
 import { UserMenu } from '../../_components/user-menu';
-import { CoursesNavLink } from '../_lib/courses-nav-link';
+import { DashboardNav } from '../../_components/dashboard-nav';
 import { requireInstructor } from '../_lib/require-instructor';
 import { toCourseOutline } from '../_lib/course-outline';
 import { computeCourseWizard } from './_lib/course-wizard';
@@ -42,7 +42,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
 
   return (
     <AppShell
-      navSlot={<CoursesNavLink ctx={ctx} />}
+      navSlot={<DashboardNav ctx={ctx} />}
       userSlot={<UserMenu />}
       sidebar={<CourseOutlineNav outline={toCourseOutline(detail)} />}
     >

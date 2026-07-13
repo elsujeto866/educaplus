@@ -4,9 +4,7 @@ import { makeSimulatorComposition } from '@/modules/simulator/composition';
 import { AppShell } from '@/shared/ui/organisms/app-shell';
 import { PageHeader } from '@/shared/ui/molecules/page-header';
 import { UserMenu } from '../../../_components/user-menu';
-import { CoursesNavLink } from '../../../courses/_lib/courses-nav-link';
-import { SimulatorsNavLink } from '../../_lib/simulators-nav-link';
-import { TracksNavLink } from '../../_lib/tracks-nav-link';
+import { DashboardNav } from '../../../_components/dashboard-nav';
 import { requireInstructor } from '../../_lib/require-instructor';
 import { SimulatorEditForm } from './_components/simulator-edit-form';
 import { SimulatorStatusActions } from './_components/simulator-status-actions';
@@ -43,16 +41,7 @@ export default async function SimulatorEditPage({ params }: SimulatorEditPagePro
   ).sort();
 
   return (
-    <AppShell
-      navSlot={
-        <>
-          <CoursesNavLink ctx={ctx} />
-          <SimulatorsNavLink ctx={ctx} />
-          <TracksNavLink ctx={ctx} />
-        </>
-      }
-      userSlot={<UserMenu />}
-    >
+    <AppShell navSlot={<DashboardNav ctx={ctx} />} userSlot={<UserMenu />}>
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <PageHeader
           title={simulator.title}

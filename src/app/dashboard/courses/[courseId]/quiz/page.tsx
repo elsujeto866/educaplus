@@ -4,7 +4,7 @@ import { makeCourseComposition } from '@/modules/course/composition';
 import { AppShell } from '@/shared/ui/organisms/app-shell';
 import { PageHeader } from '@/shared/ui/molecules/page-header';
 import { UserMenu } from '../../../_components/user-menu';
-import { CoursesNavLink } from '../../_lib/courses-nav-link';
+import { DashboardNav } from '../../../_components/dashboard-nav';
 import { requireInstructor } from '../../_lib/require-instructor';
 import { fromAssessmentView, passingScoreFromView } from './_lib/quiz-form';
 import { QuizBuilderForm } from './_components/quiz-builder-form';
@@ -36,7 +36,7 @@ export default async function QuizBuilderPage({ params }: QuizBuilderPageProps) 
   const assessment = await composition.getAssessment.execute(ctx, courseId);
 
   return (
-    <AppShell navSlot={<CoursesNavLink ctx={ctx} />} userSlot={<UserMenu />}>
+    <AppShell navSlot={<DashboardNav ctx={ctx} />} userSlot={<UserMenu />}>
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <PageHeader
           title="Evaluación final"

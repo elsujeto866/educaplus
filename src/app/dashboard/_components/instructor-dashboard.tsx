@@ -5,8 +5,7 @@ import { makeAcademyComposition } from '@/modules/academy/composition';
 import { Card } from '@/shared/ui/atoms/card';
 import { PageHeader } from '@/shared/ui/molecules/page-header';
 import { AppShell } from '@/shared/ui/organisms/app-shell';
-import { CoursesNavLink } from '../courses/_lib/courses-nav-link';
-import { SimulatorsNavLink } from '../simulators/_lib/simulators-nav-link';
+import { DashboardNav } from './dashboard-nav';
 import { UserMenu } from './user-menu';
 import { ProvisioningPending } from './provisioning-pending';
 
@@ -104,15 +103,7 @@ export async function InstructorDashboard({ ctx }: InstructorDashboardProps) {
   const memberCount = await getMemberCount(ctx.orgId);
 
   return (
-    <AppShell
-      navSlot={
-        <>
-          <CoursesNavLink ctx={ctx} />
-          <SimulatorsNavLink ctx={ctx} />
-        </>
-      }
-      userSlot={<UserMenu />}
-    >
+    <AppShell navSlot={<DashboardNav ctx={ctx} />} userSlot={<UserMenu />}>
       <div className="mx-auto flex w-full max-w-sm flex-col gap-6">
         <PageHeader title={academy.name} />
         <Card className="flex flex-col gap-4">
