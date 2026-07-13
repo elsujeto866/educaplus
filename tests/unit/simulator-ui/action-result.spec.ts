@@ -60,7 +60,7 @@ describe('toActionError', () => {
   it('maps a domain QuestionBankInUseError (matched by name) to a Spanish message', () => {
     expect(toActionError(namedError('QuestionBankInUseError'))).toEqual({
       ok: false,
-      error: 'Este banco está en uso por un simulacro y no se puede eliminar.',
+      error: 'Este banco está en uso por un simulador y no se puede eliminar.',
     });
   });
 
@@ -95,28 +95,28 @@ describe('toActionError', () => {
   it('maps a domain SimulatorNotFoundError (matched by name) to a Spanish message', () => {
     expect(toActionError(namedError('SimulatorNotFoundError'))).toEqual({
       ok: false,
-      error: 'El simulacro no existe o no tenés acceso a él.',
+      error: 'El simulador no existe o no tenés acceso a él.',
     });
   });
 
   it('maps a domain InvalidSimulatorError (matched by name) to a Spanish message', () => {
     expect(toActionError(namedError('InvalidSimulatorError'))).toEqual({
       ok: false,
-      error: 'Los datos del simulacro no son válidos.',
+      error: 'Los datos del simulador no son válidos.',
     });
   });
 
   it('maps a domain InsufficientQuestionPoolError (matched by name) to a Spanish message', () => {
     expect(toActionError(namedError('InsufficientQuestionPoolError'))).toEqual({
       ok: false,
-      error: 'El banco no tiene suficientes preguntas para publicar este simulacro con la configuración actual.',
+      error: 'El banco no tiene suficientes preguntas para publicar este simulador con la configuración actual.',
     });
   });
 
   it('maps a domain AttemptLimitReachedError (matched by name) to a Spanish message', () => {
     expect(toActionError(namedError('AttemptLimitReachedError'))).toEqual({
       ok: false,
-      error: 'Ya alcanzaste el límite de intentos permitidos para este simulacro.',
+      error: 'Ya alcanzaste el límite de intentos permitidos para este simulador.',
     });
   });
 

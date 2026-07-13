@@ -92,7 +92,7 @@ export default async function LearnerTrackMapPage({ params }: LearnerTrackMapPag
             return (
               <li key={step.stepId}>
                 <CourseCard
-                  title={`${step.position}. ${simulator?.title ?? 'Simulacro'}`}
+                  title={`${step.position}. ${simulator?.title ?? 'Simulador'}`}
                   description={simulator?.description ?? ''}
                   status={{ label: meta.label, variant: meta.variant }}
                   {...(step.status === 'locked' ? { className: 'opacity-60' } : {})}

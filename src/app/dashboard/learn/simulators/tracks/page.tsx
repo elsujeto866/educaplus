@@ -30,13 +30,13 @@ export default async function LearnerTracksCatalogPage() {
           href="/dashboard/learn/simulators"
           className="text-sm font-medium text-foreground transition-colors hover:text-primary"
         >
-          Simulacros
+          Simuladores
         </Link>
       }
       userSlot={<UserMenu />}
     >
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
-        <PageHeader title="Pistas" subtitle="Rutas de simulacros con desbloqueo progresivo." />
+        <PageHeader title="Pistas" subtitle="Rutas de simuladores con desbloqueo progresivo." />
         {publishedTracks.length === 0 ? (
           <Card className="text-center text-sm text-muted-foreground">
             No hay pistas publicadas todavía

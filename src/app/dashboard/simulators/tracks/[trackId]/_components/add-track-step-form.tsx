@@ -36,7 +36,7 @@ export function AddTrackStepForm({ trackId, simulators }: AddTrackStepFormProps)
   if (simulators.length === 0) {
     return (
       <Card className="text-center text-sm text-muted-foreground">
-        No hay simulacros publicados disponibles para agregar.
+        No hay simuladores publicados disponibles para agregar.
       </Card>
     );
   }
@@ -44,10 +44,10 @@ export function AddTrackStepForm({ trackId, simulators }: AddTrackStepFormProps)
   return (
     <Card>
       <form action={formAction} className="flex flex-col gap-4">
-        <FormField label="Agregar simulacro" htmlFor="simulatorId" error={error}>
+        <FormField label="Agregar simulador" htmlFor="simulatorId" error={error}>
           <Select id="simulatorId" name="simulatorId" required disabled={isPending} defaultValue="">
             <option value="" disabled>
-              Elegí un simulacro
+              Elegí un simulador
             </option>
             {simulators.map((simulator) => (
               <option key={simulator.id} value={simulator.id}>

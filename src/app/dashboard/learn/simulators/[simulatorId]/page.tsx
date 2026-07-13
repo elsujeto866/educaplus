@@ -18,7 +18,7 @@ interface SimulatorDetailPageProps {
  * cross-tenant, OR still-draft simulator — spec.md "Unpublished stays
  * hidden" — so `notFound()` also covers the "student guesses a draft id"
  * case with zero content leak). Shows the simulator's RULES plus a
- * "Comenzar simulacro" CTA (Slice S4) — `StartAttemptButton` triggers
+ * "Comenzar simulador" CTA (Slice S4) — `StartAttemptButton` triggers
  * `startAttemptAction`, which enforces the attempt-limit SERVER-SIDE
  * (spec.md "Attempt limit exhausted") and either resumes an existing
  * in_progress attempt or freezes a new one, then redirects to the timed
@@ -55,7 +55,7 @@ export default async function SimulatorDetailPage({ params }: SimulatorDetailPag
           href="/dashboard/learn/simulators"
           className="text-sm font-medium text-foreground transition-colors hover:text-primary"
         >
-          Simulacros
+          Simuladores
         </Link>
       }
       userSlot={<UserMenu />}

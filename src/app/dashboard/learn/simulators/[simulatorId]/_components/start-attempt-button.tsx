@@ -12,7 +12,7 @@ interface StartAttemptButtonProps {
 const initialState: ActionResult = { ok: true };
 
 /**
- * 'use client' island — "Comenzar simulacro" trigger. Uses `useActionState`
+ * 'use client' island — "Comenzar simulador" trigger. Uses `useActionState`
  * (mirrors `SimulatorStatusActions`'s publish button) because
  * `StartAttemptUseCase` has a real, user-facing rejection path (spec.md
  * "Attempt limit exhausted") that must surface an inline Spanish message.
@@ -27,7 +27,7 @@ export function StartAttemptButton({ simulatorId }: StartAttemptButtonProps) {
   return (
     <form action={formAction} className="flex flex-col gap-2">
       <Button type="submit" disabled={isPending}>
-        {isPending ? 'Iniciando...' : 'Comenzar simulacro'}
+        {isPending ? 'Iniciando...' : 'Comenzar simulador'}
       </Button>
       {error ? (
         <p role="alert" className="text-sm text-destructive">

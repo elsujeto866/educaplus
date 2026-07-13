@@ -49,7 +49,7 @@ export async function LearnerHome({ ctx }: LearnerHomeProps) {
             href="/dashboard/learn/simulators"
             className="text-sm font-medium text-foreground transition-colors hover:text-primary"
           >
-            Simulacros
+            Simuladores
           </Link>
         </>
       }

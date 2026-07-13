@@ -87,7 +87,7 @@ export default async function TrackBuilderPage({ params }: TrackBuilderPageProps
                     trackId={trackId}
                     stepId={step.id}
                     position={step.position}
-                    simulatorTitle={simulator?.title ?? 'Simulacro desconocido'}
+                    simulatorTitle={simulator?.title ?? 'Simulador desconocido'}
                     simulatorStatus={simulator?.status ?? 'draft'}
                     isFirst={index === 0}
                     isLast={index === orderedSteps.length - 1}

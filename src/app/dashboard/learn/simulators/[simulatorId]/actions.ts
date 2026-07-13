@@ -7,7 +7,7 @@ import { toActionError, type ActionResult } from '../../../simulators/_lib/actio
 
 /**
  * startAttemptAction — Server Action bound to the student detail page's
- * "Comenzar simulacro" button. Follows the canonical pattern (mirrors
+ * "Comenzar simulador" button. Follows the canonical pattern (mirrors
  * `createSimulatorAction`): getTenantContext() + use-case.execute() INSIDE
  * try, mapped via toActionError() on failure; redirect() OUTSIDE the try
  * (Next's redirect signal must never be swallowed by the catch).

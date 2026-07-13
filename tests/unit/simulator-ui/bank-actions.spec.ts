@@ -100,7 +100,7 @@ describe('deleteBankAction', () => {
 
     expect(result).toEqual({
       ok: false,
-      error: 'Este banco está en uso por un simulacro y no se puede eliminar.',
+      error: 'Este banco está en uso por un simulador y no se puede eliminar.',
     });
     expect(redirectMock).not.toHaveBeenCalled();
   });

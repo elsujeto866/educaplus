@@ -65,7 +65,7 @@ export async function createTrackAction(
 }
 
 const addTrackStepSchema = z.object({
-  simulatorId: z.string().trim().min(1, 'Elegí un simulacro para agregar.'),
+  simulatorId: z.string().trim().min(1, 'Elegí un simulador para agregar.'),
 });
 
 /**

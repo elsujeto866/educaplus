@@ -37,10 +37,10 @@ export default async function SimulatorCatalogPage() {
   return (
     <AppShell userSlot={<UserMenu />}>
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
-        <PageHeader title="Simulacros" subtitle="Simulacros disponibles en tu academia." />
+        <PageHeader title="Simuladores" subtitle="Simuladores disponibles en tu academia." />
         {simulators.length === 0 ? (
           <Card className="text-center text-sm text-muted-foreground">
-            No hay simulacros disponibles todavía
+            No hay simuladores disponibles todavía
           </Card>
         ) : (
           <ul className="flex flex-col gap-3">

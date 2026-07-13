@@ -36,7 +36,7 @@ export default async function TracksPage() {
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <PageHeader
           title="Pistas gamificadas"
-          subtitle="Encadená simulacros publicados en una ruta con desbloqueo progresivo."
+          subtitle="Encadená simuladores publicados en una ruta con desbloqueo progresivo."
         />
 
         <section className="flex flex-col gap-3">

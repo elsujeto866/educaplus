@@ -15,7 +15,7 @@ export type ActionResult = { ok: true } | { ok: false; error: string };
  */
 const DOMAIN_ERROR_MESSAGES: Record<string, string> = {
   QuestionBankNotFoundError: 'El banco de preguntas no existe o no tenés acceso a él.',
-  QuestionBankInUseError: 'Este banco está en uso por un simulacro y no se puede eliminar.',
+  QuestionBankInUseError: 'Este banco está en uso por un simulador y no se puede eliminar.',
   QuestionNotFoundError: 'La pregunta no existe o no tenés acceso a ella.',
   InvalidQuestionError: 'La pregunta no es válida. Verificá las opciones y la respuesta correcta.',
   InvalidQuestionBankError: 'El banco de preguntas no es válido.',
@@ -23,12 +23,12 @@ const DOMAIN_ERROR_MESSAGES: Record<string, string> = {
   // but name-matched here too, same rationale as course's InvalidQuizPayloadError.
   InvalidOptionsPayloadError: 'Las opciones de la pregunta tienen un formato inválido.',
   // Slice S3 — simulator definition + catalog.
-  SimulatorNotFoundError: 'El simulacro no existe o no tenés acceso a él.',
-  InvalidSimulatorError: 'Los datos del simulacro no son válidos.',
+  SimulatorNotFoundError: 'El simulador no existe o no tenés acceso a él.',
+  InvalidSimulatorError: 'Los datos del simulador no son válidos.',
   InsufficientQuestionPoolError:
-    'El banco no tiene suficientes preguntas para publicar este simulacro con la configuración actual.',
+    'El banco no tiene suficientes preguntas para publicar este simulador con la configuración actual.',
   // Slice S4 — attempt-taking.
-  AttemptLimitReachedError: 'Ya alcanzaste el límite de intentos permitidos para este simulacro.',
+  AttemptLimitReachedError: 'Ya alcanzaste el límite de intentos permitidos para este simulador.',
   SimulatorAttemptNotFoundError: 'El intento no existe o no tenés acceso a él.',
   AttemptAlreadySubmittedError: 'Este intento ya fue entregado y no se puede volver a enviar.',
   InvalidAttemptAnswersError: 'Las respuestas enviadas no son válidas para este intento.',
@@ -37,8 +37,8 @@ const DOMAIN_ERROR_MESSAGES: Record<string, string> = {
   SimulatorTrackNotFoundError: 'La pista no existe o no tenés acceso a ella.',
   InvalidSimulatorTrackStepError: 'El paso de la pista no es válido.',
   SimulatorTrackStepNotFoundError: 'El paso no existe en esta pista.',
-  SimulatorAlreadyInTrackError: 'Este simulacro ya está asignado a otra pista.',
-  SimulatorNotPublishedError: 'Solo se pueden agregar simulacros publicados a una pista.',
+  SimulatorAlreadyInTrackError: 'Este simulador ya está asignado a otra pista.',
+  SimulatorNotPublishedError: 'Solo se pueden agregar simuladores publicados a una pista.',
   TrackStepPositionConflictError: 'Otro paso ya ocupa esa posición. Probá de nuevo.',
   // Gamified Tracks — track publish/unpublish (Phase 5.4).
   EmptyTrackError: 'Esta pista todavía no tiene pasos y no se puede publicar.',

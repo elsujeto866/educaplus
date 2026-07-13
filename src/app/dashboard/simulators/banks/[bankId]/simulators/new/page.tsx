@@ -48,8 +48,8 @@ export default async function CreateSimulatorPage({ params }: CreateSimulatorPag
     >
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <PageHeader
-          title="Crear simulacro"
-          subtitle={`Definí las reglas del simulacro para el banco "${detail.bank.title}".`}
+          title="Crear simulador"
+          subtitle={`Definí las reglas del simulador para el banco "${detail.bank.title}".`}
         />
         <CreateSimulatorForm bankId={bankId} topics={topics} />
       </div>

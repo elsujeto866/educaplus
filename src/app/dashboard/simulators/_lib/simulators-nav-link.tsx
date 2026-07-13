@@ -6,7 +6,7 @@ interface SimulatorsNavLinkProps {
 }
 
 /**
- * Role-gated "Simulacros" nav link — rendered into `AppShell`'s `navSlot`
+ * Role-gated "Simuladores" nav link — rendered into `AppShell`'s `navSlot`
  * alongside `CoursesNavLink`. Hidden for `student` (bank authoring is an
  * admin/instructor concern; the student-facing catalog ships in Slice S3).
  * Mirrors `courses/_lib/courses-nav-link.tsx`.
@@ -19,7 +19,7 @@ export function SimulatorsNavLink({ ctx }: SimulatorsNavLinkProps) {
       href="/dashboard/simulators"
       className="text-sm font-medium text-foreground transition-colors hover:text-primary"
     >
-      Simulacros
+      Simuladores
     </Link>
   );
 }

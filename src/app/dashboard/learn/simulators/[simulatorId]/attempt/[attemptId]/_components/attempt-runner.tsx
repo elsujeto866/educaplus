@@ -94,7 +94,7 @@ export function AttemptRunner({ attempt, issuesCertificate = true }: AttemptRunn
         </p>
       ) : null}
       <Button type="submit" disabled={isPending}>
-        {isPending ? 'Enviando...' : 'Entregar simulacro'}
+        {isPending ? 'Enviando...' : 'Entregar simulador'}
       </Button>
     </form>
   );

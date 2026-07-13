@@ -47,13 +47,13 @@ export default async function AttemptPage({ params }: AttemptPageProps) {
           href={`/dashboard/learn/simulators/${simulatorId}`}
           className="text-sm font-medium text-foreground transition-colors hover:text-primary"
         >
-          Volver al simulacro
+          Volver al simulador
         </Link>
       }
       userSlot={<UserMenu />}
     >
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
-        <PageHeader title="Simulacro en curso" />
+        <PageHeader title="Simulador en curso" />
         <AttemptRunner attempt={toAttemptView(attempt)} issuesCertificate={issuesCertificate} />
       </div>
     </AppShell>

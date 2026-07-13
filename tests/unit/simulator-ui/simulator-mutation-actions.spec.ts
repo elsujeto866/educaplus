@@ -78,7 +78,7 @@ describe('updateSimulatorAction', () => {
       'sim-1',
       initialState,
       formDataWith({
-        title: 'Simulacro actualizado',
+        title: 'Simulador actualizado',
         questionCount: '8',
         passingScore: '80',
         timeLimitMinutes: '40',
@@ -92,7 +92,7 @@ describe('updateSimulatorAction', () => {
       instructorCtx,
       expect.objectContaining({
         id: 'sim-1',
-        title: 'Simulacro actualizado',
+        title: 'Simulador actualizado',
         questionCount: 8,
         passingScore: 80,
         timeLimitMinutes: 40,
@@ -111,7 +111,7 @@ describe('updateSimulatorAction', () => {
       'sim-1',
       initialState,
       formDataWith({
-        title: 'Simulacro actualizado',
+        title: 'Simulador actualizado',
         questionCount: '8',
         passingScore: '80',
         timeLimitMinutes: '40',
@@ -134,7 +134,7 @@ describe('updateSimulatorAction', () => {
       'sim-1',
       initialState,
       formDataWith({
-        title: 'Simulacro actualizado',
+        title: 'Simulador actualizado',
         questionCount: '8',
         passingScore: '80',
         timeLimitMinutes: '40',
@@ -158,7 +158,7 @@ describe('updateSimulatorAction', () => {
       'sim-1',
       initialState,
       formDataWith({
-        title: 'Simulacro válido',
+        title: 'Simulador válido',
         questionCount: '8',
         passingScore: '80',
         timeLimitMinutes: '40',
@@ -166,7 +166,7 @@ describe('updateSimulatorAction', () => {
       }),
     );
 
-    expect(result).toEqual({ ok: false, error: 'El simulacro no existe o no tenés acceso a él.' });
+    expect(result).toEqual({ ok: false, error: 'El simulador no existe o no tenés acceso a él.' });
   });
 });
 
@@ -187,7 +187,7 @@ describe('publishSimulatorAction', () => {
 
     expect(result).toEqual({
       ok: false,
-      error: 'El banco no tiene suficientes preguntas para publicar este simulacro con la configuración actual.',
+      error: 'El banco no tiene suficientes preguntas para publicar este simulador con la configuración actual.',
     });
   });
 

@@ -26,7 +26,7 @@ export function SimulatorCertificateView({ view }: SimulatorCertificateViewProps
       </div>
 
       <div className="flex flex-col gap-1">
-        <p className="text-sm text-muted-foreground print:text-black">por aprobar el simulacro</p>
+        <p className="text-sm text-muted-foreground print:text-black">por aprobar el simulador</p>
         <p className="text-xl font-semibold text-foreground print:text-black">
           {view.simulatorTitle}
         </p>

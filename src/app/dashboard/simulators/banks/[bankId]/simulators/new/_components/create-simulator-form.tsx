@@ -116,7 +116,7 @@ export function CreateSimulatorForm({ bankId, topics }: CreateSimulatorFormProps
           Emitir certificado al aprobar
         </label>
         <Button type="submit" disabled={isPending}>
-          {isPending ? 'Creando...' : 'Crear simulacro'}
+          {isPending ? 'Creando...' : 'Crear simulador'}
         </Button>
       </form>
     </Card>

@@ -86,7 +86,7 @@ describe('startAttemptAction', () => {
 
     expect(result).toEqual({
       ok: false,
-      error: 'Ya alcanzaste el límite de intentos permitidos para este simulacro.',
+      error: 'Ya alcanzaste el límite de intentos permitidos para este simulador.',
     });
     expect(redirectMock).not.toHaveBeenCalled();
   });

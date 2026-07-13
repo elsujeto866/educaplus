@@ -25,7 +25,7 @@ const STATUS_LABEL: Record<'draft' | 'published', string> = {
  * Role-gated: only admin/instructor reach this route. Two sections mirror
  * design Decision 9's "list banks+simulators": question banks (reusable
  * pools, Slice S2) and simulators (the exam RULES students actually take,
- * this slice) — each bank card links into a bank-scoped "Crear simulacro"
+ * this slice) — each bank card links into a bank-scoped "Crear simulador"
  * flow (a simulator always binds to exactly one bank).
  */
 export default async function SimulatorsPage() {
@@ -51,7 +51,7 @@ export default async function SimulatorsPage() {
       userSlot={<UserMenu />}
     >
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
-        <PageHeader title="Simulacros" subtitle="Gestioná los bancos de preguntas y simulacros de tu academia." />
+        <PageHeader title="Simuladores" subtitle="Gestioná los bancos de preguntas y simuladores de tu academia." />
 
         <section className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
@@ -83,7 +83,7 @@ export default async function SimulatorsPage() {
                       href={`/dashboard/simulators/banks/${bank.id}/simulators/new`}
                       className="text-sm font-medium text-primary hover:underline"
                     >
-                      Crear simulacro desde este banco
+                      Crear simulador desde este banco
                     </Link>
                   </Card>
                 </li>
@@ -93,9 +93,9 @@ export default async function SimulatorsPage() {
         </section>
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold text-foreground">Simulacros</h2>
+          <h2 className="text-base font-semibold text-foreground">Simuladores</h2>
           {simulators.length === 0 ? (
-            <Card className="text-center text-sm text-muted-foreground">Todavía no tenés simulacros</Card>
+            <Card className="text-center text-sm text-muted-foreground">Todavía no tenés simuladores</Card>
           ) : (
             <ul className="flex flex-col gap-3">
               {simulators.map((simulator) => (
