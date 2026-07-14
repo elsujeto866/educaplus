@@ -3,7 +3,11 @@ import { NextResponse } from 'next/server';
 
 /**
  * Public routes — open without authentication or active org membership.
- * The webhook route MUST stay open so Svix can deliver events.
+ * The webhook route MUST stay open so Svix can deliver events. `/a/(.*)`
+ * is the public academy discovery + request-access page (spec "Public-Safe
+ * Academy Projection") — it deliberately never calls getTenantContext() and
+ * must be reachable by unauthenticated visitors, or the whole feature is
+ * unreachable behind the sign-in redirect below.
  */
 const isPublicRoute = createRouteMatcher([
   '/',
@@ -11,6 +15,7 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/api/health(.*)',
   '/api/webhooks/(.*)',
+  '/a/(.*)',
 ]);
 
 /**
