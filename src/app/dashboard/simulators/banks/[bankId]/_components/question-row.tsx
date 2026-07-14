@@ -18,8 +18,14 @@ const DIFFICULTY_LABEL: Record<'easy' | 'medium' | 'hard', string> = {
 /**
  * Local, delivery-owned shape — deliberately NOT importing `Question` from
  * `modules/simulator/domain` (eslint-boundaries: delivery may only reach
- * `domain` via `composition`). A `Question` entity instance satisfies this
- * interface structurally, so the caller can pass it straight through.
+ * `domain` via `composition`).
+ *
+ * IMPORTANT: a `Question` entity instance satisfies this interface
+ * STRUCTURALLY, but must NEVER be passed straight through — `QuestionRow` is
+ * `'use client'`, and RSC can only serialize plain objects across the
+ * server->client boundary (a class instance throws at render time). The
+ * caller (`QuestionList`'s `toQuestionRowData`) always rebuilds a fresh
+ * plain object literal before it reaches this component.
  */
 export interface QuestionRowData {
   id: string;
