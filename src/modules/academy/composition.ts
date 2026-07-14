@@ -1,10 +1,14 @@
 import { DrizzleAcademyRepository } from './infrastructure/drizzle-academy.repository';
 import { DrizzleMembershipRepository } from './infrastructure/drizzle-membership.repository';
+import { DrizzlePublicAcademyRepository } from './infrastructure/drizzle-public-academy.repository';
+import { DrizzlePublicJoinRequestRepository } from './infrastructure/drizzle-public-join-request.repository';
 import { ProvisionAcademyUseCase } from './application/provision-academy.use-case';
 import { GetAcademyUseCase } from './application/get-academy.use-case';
 import { SyncMembershipUseCase } from './application/sync-membership.use-case';
 import { DeleteAcademyUseCase } from './application/delete-academy.use-case';
 import { DeleteMembershipUseCase } from './application/delete-membership.use-case';
+import { GetPublicAcademyUseCase } from './application/get-public-academy.use-case';
+import { RequestAccessUseCase } from './application/request-access.use-case';
 
 export interface AcademyComposition {
   provisionAcademy: ProvisionAcademyUseCase;
@@ -12,6 +16,9 @@ export interface AcademyComposition {
   syncMembership: SyncMembershipUseCase;
   deleteAcademy: DeleteAcademyUseCase;
   deleteMembership: DeleteMembershipUseCase;
+  /** Public/untenanted path (design D1) — never receives TenantContext. */
+  getPublicAcademy: GetPublicAcademyUseCase;
+  requestAccess: RequestAccessUseCase;
 }
 
 /**
@@ -24,6 +31,8 @@ export interface AcademyComposition {
 export function makeAcademyComposition(): AcademyComposition {
   const academyRepo = new DrizzleAcademyRepository();
   const membershipRepo = new DrizzleMembershipRepository();
+  const publicAcademyRepo = new DrizzlePublicAcademyRepository();
+  const publicJoinRequestRepo = new DrizzlePublicJoinRequestRepository();
 
   return {
     provisionAcademy: new ProvisionAcademyUseCase(academyRepo),
@@ -31,5 +40,7 @@ export function makeAcademyComposition(): AcademyComposition {
     syncMembership: new SyncMembershipUseCase(membershipRepo),
     deleteAcademy: new DeleteAcademyUseCase(academyRepo),
     deleteMembership: new DeleteMembershipUseCase(membershipRepo),
+    getPublicAcademy: new GetPublicAcademyUseCase(publicAcademyRepo),
+    requestAccess: new RequestAccessUseCase(publicJoinRequestRepo),
   };
 }
