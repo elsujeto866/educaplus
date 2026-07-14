@@ -1,10 +1,10 @@
 'use client';
 
 import { useActionState, useRef, useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { deleteBankAction } from '../../../actions';
 import type { ActionResult } from '../../../_lib/action-result';
 import { Button } from '@/shared/ui/atoms/button';
-import { Card } from '@/shared/ui/atoms/card';
 import { ConfirmDialog } from '@/shared/ui/organisms/confirm-dialog';
 
 const initialState: ActionResult = { ok: true };
@@ -14,8 +14,10 @@ interface BankDeleteActionProps {
 }
 
 /**
- * 'use client' island — delete-with-confirmation. Uses `useActionState`
- * (unlike `courses/[courseId]/_components/course-status-actions.tsx`'s
+ * 'use client' island — delete-with-confirmation, rendered as a small
+ * recessive ghost icon button (per the redesign brief: bank actions live
+ * as corner icon buttons, not a full-width labeled button). Uses
+ * `useActionState` (unlike `courses/[courseId]/_components/course-status-actions.tsx`'s
  * fire-and-forget delete) because `deleteBankAction` has a real rejection
  * path (spec.md "Delete bank referenced by a simulator") that must surface
  * an inline Spanish message instead of an unhandled rejection.
@@ -28,10 +30,16 @@ export function BankDeleteAction({ bankId }: BankDeleteActionProps) {
   const error = state.ok ? undefined : state.error;
 
   return (
-    <Card className="flex flex-col gap-3">
+    <>
       <form ref={formRef} action={formAction} className="hidden" aria-hidden="true" />
-      <Button type="button" variant="danger" onClick={() => setConfirming(true)} disabled={isPending}>
-        Eliminar banco
+      <Button
+        type="button"
+        variant="ghost"
+        aria-label="Eliminar banco"
+        onClick={() => setConfirming(true)}
+        disabled={isPending}
+      >
+        <Trash2 className="h-4 w-4" aria-hidden="true" />
       </Button>
       {error ? (
         <p role="alert" className="text-sm text-destructive">
@@ -51,6 +59,6 @@ export function BankDeleteAction({ bankId }: BankDeleteActionProps) {
           }}
         />
       ) : null}
-    </Card>
+    </>
   );
 }
