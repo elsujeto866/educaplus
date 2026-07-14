@@ -27,14 +27,37 @@ CREATE POLICY "tenant_isolation" ON "join_requests" AS PERMISSIVE FOR ALL TO "ap
 -- "public_insert" on join_requests because the latter's WITH CHECK
 -- subquery reads academies — Postgres does not require this ordering
 -- technically, but it documents the dependency and matches design intent.
+--
+-- TWO corrections vs. the original design draft, found by the RLS test
+-- suite (tests/integration/rls/join-requests-isolation.spec.ts) and
+-- load-bearing for both isolation and the public-insert path to work:
+--
+--   1. `GRANT academy_public TO app_user` alone makes app_user a role
+--      member WITH INHERIT (the Postgres default). Postgres evaluates a
+--      PERMISSIVE policy's `TO <role>` clause via role MEMBERSHIP, not via
+--      "is <role> the currently SET ROLE" — so without `WITH INHERIT
+--      FALSE`, the "public_read" policy (TO academy_public) silently
+--      OR-composes with app_user's own "tenant_isolation" policy on every
+--      app_user session, leaking every published/non-deleted academy to
+--      EVERY tenant regardless of app.current_tenant_id. `WITH INHERIT
+--      FALSE` (Postgres 16+) keeps `SET LOCAL ROLE academy_public` working
+--      (SET ROLE only requires membership) while stopping academy_public's
+--      grants/policies from silently applying to app_user's own sessions.
+--   2. The `public_insert` WITH CHECK subquery below reads
+--      `academies.is_public` and `academies.deleted_at`, so academy_public
+--      needs column-level SELECT on those two columns too — not just
+--      (id, name, slug). Postgres checks column-level privileges for every
+--      column referenced anywhere in a policy expression, including inside
+--      a WITH CHECK subquery, not only for columns actually projected by
+--      the outer query.
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='academy_public') THEN
     CREATE ROLE academy_public NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
   END IF;
 END $$;--> statement-breakpoint
-GRANT academy_public TO app_user;--> statement-breakpoint
+GRANT academy_public TO app_user WITH INHERIT FALSE;--> statement-breakpoint
 GRANT USAGE ON SCHEMA public TO academy_public;--> statement-breakpoint
-GRANT SELECT (id, name, slug) ON academies TO academy_public;--> statement-breakpoint
+GRANT SELECT (id, name, slug, is_public, deleted_at) ON academies TO academy_public;--> statement-breakpoint
 GRANT INSERT ON join_requests TO academy_public;--> statement-breakpoint
 CREATE POLICY "public_read" ON academies AS PERMISSIVE FOR SELECT TO academy_public
   USING (is_public = true AND deleted_at IS NULL);--> statement-breakpoint

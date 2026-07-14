@@ -17,6 +17,12 @@
  *   set_config('app.current_tenant_id', orgId, true) (LOCAL to transaction).
  *   This mirrors what withTenant() does in production, so policies see the
  *   same GUC value.
+ *
+ * asPublicRole(fn) — runs fn inside a transaction with
+ *   SET LOCAL ROLE academy_public (LOCAL to transaction). This mirrors what
+ *   withPublicRole() does in production. Connects via appUserClient because
+ *   academy_public is NOLOGIN — only reachable by a login role granted
+ *   membership in it (see drizzle/0011_join_requests_rls.sql).
  */
 
 import postgres from 'postgres';
@@ -48,6 +54,19 @@ export function asTenant<T>(
 ): Promise<T> {
   return appUserClient.begin(async (txSql) => {
     await txSql`SELECT set_config('app.current_tenant_id', ${orgId}, true)`;
+    return fn(txSql);
+  }) as unknown as Promise<T>;
+}
+
+/**
+ * Run fn inside a transaction downgraded to the academy_public role for the
+ * duration of that transaction (SET LOCAL ROLE — cleared on commit/rollback).
+ * Mirrors withPublicRole() in production. No tenant GUC is set here: the
+ * public path never holds tenant context, by design.
+ */
+export function asPublicRole<T>(fn: (sql: postgres.TransactionSql) => Promise<T>): Promise<T> {
+  return appUserClient.begin(async (txSql) => {
+    await txSql`SET LOCAL ROLE academy_public`;
     return fn(txSql);
   }) as unknown as Promise<T>;
 }

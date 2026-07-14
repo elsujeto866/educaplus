@@ -62,6 +62,17 @@
  *   15. Seed one simulator_track → simulator_track_step →
  *      simulator_track_progress chain per org so the 3 new isolation specs
  *      have rows on both sides to compare against.
+ *   6k. Apply drizzle migration 0011_join_requests_rls.sql (creates
+ *      join_requests + academies.is_public, plus the LOAD-BEARING manual
+ *      tail: the academy_public NOLOGIN role, its grants, the public_read
+ *      policy on academies, the public_insert policy on join_requests, and
+ *      FORCE ROW LEVEL SECURITY on join_requests — verified by the
+ *      join-requests RLS suite).
+ *   16. Seed academy-c (is_public=false, unpublished) and academy-d
+ *      (is_public=true but soft-deleted) so the public-role RLS suite can
+ *      assert academy_public cannot read/insert against a non-public or
+ *      deleted academy. Seeds one pending join_request per org_A/org_B so
+ *      admin-path isolation has rows on both sides.
  *
  * Returns a teardown function (no-op — the container is torn down externally).
  */
@@ -116,6 +127,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     //    simulator_track_progress / simulator_track_steps reference
     //    simulator_tracks (and, for steps, simulators) — drop both before
     //    simulators/simulator_tracks.
+    await sql.unsafe('DROP TABLE IF EXISTS join_requests CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS simulator_track_progress CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS simulator_track_steps CASCADE');
     await sql.unsafe('DROP TABLE IF EXISTS simulator_tracks CASCADE');
@@ -309,6 +321,25 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       .filter(Boolean);
 
     for (const stmt of stmts0010) {
+      await sql.unsafe(stmt);
+    }
+
+    // 6k. Apply 0011_join_requests_rls.sql — creates join_requests
+    //     (fresh CREATE TABLE + ENABLE RLS + tenant_isolation policy) and
+    //     academies.is_public, plus the LOAD-BEARING manual tail: the
+    //     academy_public NOLOGIN role (GRANTed to app_user so it can
+    //     SET LOCAL ROLE), column-level SELECT on academies, INSERT on
+    //     join_requests, the public_read policy on academies, the
+    //     public_insert policy on join_requests, admin GRANTs, and
+    //     FORCE ROW LEVEL SECURITY on join_requests — verified by the
+    //     join-requests RLS suite.
+    const raw0011 = readFileSync(join(DRIZZLE_DIR, '0011_join_requests_rls.sql'), 'utf-8');
+    const stmts0011 = raw0011
+      .split('--> statement-breakpoint')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    for (const stmt of stmts0011) {
       await sql.unsafe(stmt);
     }
 
@@ -658,6 +689,35 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
         'user_B1',
         1
       )
+      ON CONFLICT (id) DO NOTHING
+    `;
+
+    // 16. Seed academy-c (unpublished — is_public=false) and academy-d
+    //     (soft-deleted — deleted_at set, is_public still true) so the
+    //     join-requests RLS suite can assert academy_public cannot
+    //     read/insert against a non-public or deleted academy, distinct
+    //     from the "not found at all" case.
+    await sql`
+      INSERT INTO academies (id, name, slug, is_public)
+      VALUES ('org_C', 'Academy C', 'academy-c', false)
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO academies (id, name, slug, is_public, deleted_at)
+      VALUES ('org_D', 'Academy D', 'academy-d', true, now())
+      ON CONFLICT (id) DO NOTHING
+    `;
+
+    // Seed one pending join_request per org_A/org_B so admin-path
+    // (tenant_isolation) isolation assertions have rows on both sides.
+    await sql`
+      INSERT INTO join_requests (id, academy_id, email, status)
+      VALUES ('a0000000-0000-0000-0000-000000000013', 'org_A', 'pending-a@student.com', 'pending')
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO join_requests (id, academy_id, email, status)
+      VALUES ('b0000000-0000-0000-0000-000000000013', 'org_B', 'pending-b@student.com', 'pending')
       ON CONFLICT (id) DO NOTHING
     `;
   } finally {
