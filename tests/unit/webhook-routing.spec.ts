@@ -30,12 +30,14 @@ const mockProvisionAcademy = { execute: vi.fn() };
 const mockSyncMembership = { execute: vi.fn() };
 const mockDeleteAcademy = { execute: vi.fn() };
 const mockDeleteMembership = { execute: vi.fn() };
+const mockFulfillJoinRequest = { execute: vi.fn() };
 
 const mockComposition = {
   provisionAcademy: mockProvisionAcademy,
   syncMembership: mockSyncMembership,
   deleteAcademy: mockDeleteAcademy,
   deleteMembership: mockDeleteMembership,
+  fulfillJoinRequest: mockFulfillJoinRequest,
 } as unknown as AcademyComposition;
 
 // ---------------------------------------------------------------------------
@@ -178,6 +180,26 @@ describe('handleWebhookEvent — membership events', () => {
 
     const [, input] = mockSyncMembership.execute.mock.calls[0] as [unknown, { role: string }];
     expect(input.role).toBe('student');
+  });
+
+  it('calls fulfillJoinRequest AFTER syncMembership on organizationMembership.created (reconciliation, Phase 4)', async () => {
+    await handleWebhookEvent(membershipEvent('organizationMembership.created', 'org:admin'), mockComposition);
+
+    expect(mockFulfillJoinRequest.execute).toHaveBeenCalledOnce();
+    expect(mockFulfillJoinRequest.execute).toHaveBeenCalledWith(
+      { orgId: 'org_test', userId: 'system', role: 'admin' },
+      { academyId: 'org_test', email: 'test@example.com', membershipId: 'orgmem_test' },
+    );
+
+    const syncOrder = mockSyncMembership.execute.mock.invocationCallOrder[0]!;
+    const fulfillOrder = mockFulfillJoinRequest.execute.mock.invocationCallOrder[0]!;
+    expect(syncOrder).toBeLessThan(fulfillOrder);
+  });
+
+  it('does NOT call fulfillJoinRequest on organizationMembership.updated (reconciliation is create-only)', async () => {
+    await handleWebhookEvent(membershipEvent('organizationMembership.updated', 'org:admin'), mockComposition);
+
+    expect(mockFulfillJoinRequest.execute).not.toHaveBeenCalled();
   });
 
   it('calls deleteMembership on organizationMembership.deleted with correct tenant context', async () => {

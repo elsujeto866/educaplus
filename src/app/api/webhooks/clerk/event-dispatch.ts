@@ -63,6 +63,19 @@ export async function handleWebhookEvent(
         clerkUserId: event.data.public_user_data.user_id,
         role: mapClerkRole(event.data.role),
       });
+
+      // Reconciliation (Phase 4) — only on .created (a fresh signup, not a
+      // role change). Runs AFTER syncMembership, in the SAME tenant path
+      // (system/admin ctx, orgId-scoped withTenant) — never the public
+      // academy_public role. Silent no-op when no matching approved
+      // JoinRequest exists (member added directly by an admin).
+      if (event.type === 'organizationMembership.created') {
+        await composition.fulfillJoinRequest.execute(ctx, {
+          academyId: orgId,
+          email: event.data.public_user_data.identifier,
+          membershipId: event.data.id,
+        });
+      }
       break;
     }
 

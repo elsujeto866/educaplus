@@ -14,6 +14,7 @@ import { RequestAccessUseCase } from './application/request-access.use-case';
 import { ListPendingJoinRequestsUseCase } from './application/list-pending-join-requests.use-case';
 import { ApproveJoinRequestUseCase } from './application/approve-join-request.use-case';
 import { RejectJoinRequestUseCase } from './application/reject-join-request.use-case';
+import { FulfillJoinRequestUseCase } from './application/fulfill-join-request.use-case';
 
 export interface AcademyComposition {
   provisionAcademy: ProvisionAcademyUseCase;
@@ -28,6 +29,8 @@ export interface AcademyComposition {
   listPendingJoinRequests: ListPendingJoinRequestsUseCase;
   approveJoinRequest: ApproveJoinRequestUseCase;
   rejectJoinRequest: RejectJoinRequestUseCase;
+  /** Reconciliation (Phase 4) — wired into the Clerk webhook's organizationMembership.created case. */
+  fulfillJoinRequest: FulfillJoinRequestUseCase;
 }
 
 /**
@@ -56,5 +59,6 @@ export function makeAcademyComposition(): AcademyComposition {
     listPendingJoinRequests: new ListPendingJoinRequestsUseCase(joinRequestRepo),
     approveJoinRequest: new ApproveJoinRequestUseCase(joinRequestRepo, invitationAdapter),
     rejectJoinRequest: new RejectJoinRequestUseCase(joinRequestRepo),
+    fulfillJoinRequest: new FulfillJoinRequestUseCase(joinRequestRepo),
   };
 }
