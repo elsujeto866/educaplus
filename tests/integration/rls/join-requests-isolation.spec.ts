@@ -187,10 +187,17 @@ describe('deny-by-default (no tenant context set) — join_requests', () => {
 });
 
 describe('public_read does not leak onto app_user', () => {
-  it('org_A tenant context still cannot see org_C, even though academy_public can read published academies', async () => {
+  // Regression guard for the role-INHERIT leak (see drizzle/0011_join_requests_rls.sql
+  // correction #1). Deliberately targets org_B — a PUBLISHED, non-deleted academy
+  // that academy_public's public_read policy WOULD return. Asserting against org_C
+  // (is_public=false) here would pass vacuously even if the INHERIT leak
+  // regressed, because public_read itself would also deny org_C — it cannot
+  // distinguish "blocked by tenant_isolation" from "blocked by public_read".
+  // Only a PUBLISHED academy makes this test capable of catching the leak.
+  it('org_A tenant context still cannot see org_B, even though academy_public can read published academies', async () => {
     const rows = await asTenant(
       'org_A',
-      (tx) => tx`SELECT id FROM academies WHERE id = 'org_C'`,
+      (tx) => tx`SELECT id FROM academies WHERE id = 'org_B'`,
     );
     expect(rows).toHaveLength(0);
   });
