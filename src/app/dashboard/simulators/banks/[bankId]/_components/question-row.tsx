@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { deleteQuestionAction } from '../actions';
 import type { QuestionDraft } from '../_lib/question-form';
 import { Button } from '@/shared/ui/atoms/button';
@@ -40,16 +41,23 @@ export interface QuestionRowData {
 interface QuestionRowProps {
   bankId: string;
   question: QuestionRowData;
+  /** 1-based display position — computed from the list's render order (not the domain `position` field). */
+  position: number;
 }
 
 /**
- * 'use client' island — one question's read view, toggling into
- * `QuestionFormCard` (edit mode) or a delete confirmation. No route change
- * on edit/delete (mirrors the bank detail page owning the whole authoring
+ * 'use client' island — compact "expand-to-act" row. Collapsed by default:
+ * position number, truncated prompt, topic/difficulty badges, and a
+ * chevron — no edit/delete controls visible. Clicking the row expands it
+ * to reveal the full options list plus small ghost icon edit/delete
+ * buttons in the corner. Edit toggles into `QuestionFormCard` (edit mode);
+ * delete opens the existing `ConfirmDialog` flow. No route change on
+ * edit/delete (mirrors the bank detail page owning the whole authoring
  * surface, per the task list's route scope: only `/dashboard/simulators`
  * and `/dashboard/simulators/banks/[bankId]`).
  */
-export function QuestionRow({ bankId, question }: QuestionRowProps) {
+export function QuestionRow({ bankId, question, position }: QuestionRowProps) {
+  const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
@@ -76,30 +84,60 @@ export function QuestionRow({ bankId, question }: QuestionRowProps) {
 
   return (
     <Card className="flex flex-col gap-3">
-      <p className="text-sm font-medium text-foreground">{question.prompt}</p>
-      <div className="flex flex-wrap gap-2">
+      <button
+        type="button"
+        className="flex items-start gap-3 text-left"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((prev) => !prev)}
+      >
+        {expanded ? (
+          <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        ) : (
+          <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        )}
+        <span className="mt-0.5 shrink-0 text-sm font-medium text-muted-foreground">#{position}</span>
+        <span className="line-clamp-2 flex-1 text-sm font-medium text-foreground">{question.prompt}</span>
+      </button>
+
+      <div className="flex flex-wrap gap-2 pl-7">
         {question.topic ? <Badge>{question.topic}</Badge> : null}
         {question.difficulty ? <Badge variant="accent">{DIFFICULTY_LABEL[question.difficulty]}</Badge> : null}
       </div>
-      <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
-        {question.options.map((option) => (
-          <li
-            key={option.id}
-            className={option.id === question.correctOptionId ? 'font-medium text-primary' : undefined}
-          >
-            {option.label}
-            {option.id === question.correctOptionId ? ' ✓' : ''}
-          </li>
-        ))}
-      </ul>
-      <div className="flex gap-2">
-        <Button type="button" variant="secondary" onClick={() => setEditing(true)}>
-          Editar
-        </Button>
-        <Button type="button" variant="danger" onClick={() => setConfirmingDelete(true)}>
-          Eliminar
-        </Button>
-      </div>
+
+      {expanded ? (
+        <div className="flex flex-col gap-3 border-t border-border pt-3">
+          <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
+            {question.options.map((option) => (
+              <li
+                key={option.id}
+                className={option.id === question.correctOptionId ? 'font-medium text-primary' : undefined}
+              >
+                {option.label}
+                {option.id === question.correctOptionId ? ' ✓' : ''}
+              </li>
+            ))}
+          </ul>
+          <div className="flex justify-end gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              aria-label="Editar pregunta"
+              onClick={() => setEditing(true)}
+            >
+              <Pencil className="h-4 w-4" aria-hidden="true" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              aria-label="Eliminar pregunta"
+              onClick={() => setConfirmingDelete(true)}
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {confirmingDelete ? (
         <ConfirmDialog
           title="Eliminar pregunta"

@@ -60,8 +60,13 @@ export function QuestionList({ bankId, questions }: QuestionListProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      {questions.map((question) => (
-        <QuestionRow key={question.id} bankId={bankId} question={toQuestionRowData(question)} />
+      {questions.map((question, index) => (
+        <QuestionRow
+          key={question.id}
+          bankId={bankId}
+          question={toQuestionRowData(question)}
+          position={index + 1}
+        />
       ))}
     </div>
   );
