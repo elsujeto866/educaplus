@@ -37,3 +37,16 @@ export class JoinRequestNotApprovedError extends Error {
     this.name = 'JoinRequestNotApprovedError';
   }
 }
+
+/**
+ * Thrown by ApproveJoinRequestUseCase/RejectJoinRequestUseCase (Phase 3)
+ * when `id` does not resolve to a JoinRequest in the caller's own academy
+ * (RLS/tenant scoping means a cross-tenant id looks identical to an
+ * unknown one — never a distinguishable "forbidden" case).
+ */
+export class JoinRequestNotFoundError extends Error {
+  constructor(id: string) {
+    super(`Join request "${id}" was not found`);
+    this.name = 'JoinRequestNotFoundError';
+  }
+}
