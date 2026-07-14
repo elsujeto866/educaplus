@@ -50,6 +50,37 @@ CREATE POLICY "tenant_isolation" ON "join_requests" AS PERMISSIVE FOR ALL TO "ap
 --      column referenced anywhere in a policy expression, including inside
 --      a WITH CHECK subquery, not only for columns actually projected by
 --      the outer query.
+--
+-- ONE further hardening correction, added post-PR1-verify (WARNING 1) and
+-- proven by the "cannot set privileged columns" describe block in the same
+-- suite:
+--
+--   3. The original `GRANT INSERT ON join_requests TO academy_public` was
+--      TABLE-WIDE, so the WITH CHECK below (status + publication only) was
+--      the ONLY boundary — an untenanted caller could still explicitly set
+--      id, created_at, resolved_at, resolved_by, fulfilled_at, or
+--      membership_id on their own insert (reconciliation-poisoning: e.g.
+--      pre-setting fulfilled_at so a later admin approve's reconciliation
+--      query `status='approved' AND fulfilled_at IS NULL` silently skips the
+--      row, or spoofing resolved_by). Fixed with TWO layers, matching the
+--      column-level GRANT convention already used for `academies` above:
+--        a) `GRANT INSERT (academy_id, email, status)` — column-level GRANT
+--           restricts which columns academy_public may EXPLICITLY assign in
+--           an INSERT's column list at all; every other column can only ever
+--           take its DEFAULT (Postgres does not require INSERT privilege on
+--           a column that is not explicitly assigned a value, so id/
+--           created_at/resolved_at/resolved_by/fulfilled_at/membership_id
+--           safely fall back to their table defaults / NULL without needing
+--           a grant). This is the PRIMARY, load-bearing boundary — it fails
+--           at the privilege-check stage, before WITH CHECK is even
+--           evaluated.
+--        b) The WITH CHECK below also explicitly asserts
+--           `resolved_at/resolved_by/fulfilled_at/membership_id IS NULL` as
+--           defense-in-depth, so the guarantee holds even if the column
+--           grant is ever accidentally widened in a future migration.
+--      `status` stays in the column grant (still explicitly assignable) —
+--      the pre-existing WITH CHECK `status = 'pending'` already pins its
+--      only legal value.
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='academy_public') THEN
     CREATE ROLE academy_public NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
@@ -58,11 +89,14 @@ END $$;--> statement-breakpoint
 GRANT academy_public TO app_user WITH INHERIT FALSE;--> statement-breakpoint
 GRANT USAGE ON SCHEMA public TO academy_public;--> statement-breakpoint
 GRANT SELECT (id, name, slug, is_public, deleted_at) ON academies TO academy_public;--> statement-breakpoint
-GRANT INSERT ON join_requests TO academy_public;--> statement-breakpoint
+GRANT INSERT (academy_id, email, status) ON join_requests TO academy_public;--> statement-breakpoint
 CREATE POLICY "public_read" ON academies AS PERMISSIVE FOR SELECT TO academy_public
   USING (is_public = true AND deleted_at IS NULL);--> statement-breakpoint
 CREATE POLICY "public_insert" ON join_requests AS PERMISSIVE FOR INSERT TO academy_public
-  WITH CHECK (status = 'pending' AND EXISTS (
+  WITH CHECK (status = 'pending'
+    AND resolved_at IS NULL AND resolved_by IS NULL
+    AND fulfilled_at IS NULL AND membership_id IS NULL
+    AND EXISTS (
     SELECT 1 FROM academies a WHERE a.id = academy_id AND a.is_public = true AND a.deleted_at IS NULL));--> statement-breakpoint
 GRANT SELECT, INSERT, UPDATE, DELETE ON join_requests TO app_user;--> statement-breakpoint
 ALTER TABLE "join_requests" FORCE ROW LEVEL SECURITY;

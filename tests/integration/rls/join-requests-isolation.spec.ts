@@ -110,6 +110,98 @@ describe('public_insert — academy_public cannot insert a non-pending row', () 
 });
 
 // ---------------------------------------------------------------------------
+// PUBLIC path — join_requests INSERT column boundary (WARNING 1 hardening)
+//
+// The public_insert WITH CHECK only ever constrained status + academy
+// publication. Table-wide `GRANT INSERT ON join_requests TO academy_public`
+// left every OTHER column explicitly settable by an untenanted caller —
+// reconciliation-poisoning (pre-set fulfilled_at so a later admin approve
+// silently skips the row) or resolved_by spoofing. Each column below must be
+// rejected as soon as it is EXPLICITLY assigned by academy_public, proving
+// the column-scoped GRANT (not just the WITH CHECK) is the enforcement
+// boundary — a caller cannot bypass it merely by picking a NULL value,
+// because column privilege is checked on assignment, independent of value.
+// ---------------------------------------------------------------------------
+
+describe('public_insert — academy_public cannot set privileged columns', () => {
+  // Distinct emails per test + cleanup: these inserts share the partial
+  // unique index (academy_id, email) WHERE status='pending' with every other
+  // describe block in this file. Reusing 'visitor@student.com' across
+  // sequential tests would make a later insert fail with unique_violation
+  // instead of the permission-denied error this suite actually asserts,
+  // producing a false-positive pass that proves nothing about column grants.
+  afterEach(async () => {
+    await superuserClient`DELETE FROM join_requests WHERE email LIKE 'privileged-column-%@student.com'`;
+  });
+
+  it('rejects an insert that explicitly sets resolved_by', async () => {
+    await expect(
+      asPublicRole(
+        (tx) => tx`
+          INSERT INTO join_requests (academy_id, email, status, resolved_by)
+          VALUES ('org_A', 'privileged-column-resolved-by@student.com', 'pending', 'user_A1')
+        `,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('rejects an insert that explicitly sets resolved_at', async () => {
+    await expect(
+      asPublicRole(
+        (tx) => tx`
+          INSERT INTO join_requests (academy_id, email, status, resolved_at)
+          VALUES ('org_A', 'privileged-column-resolved-at@student.com', 'pending', now())
+        `,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('rejects an insert that explicitly sets fulfilled_at', async () => {
+    await expect(
+      asPublicRole(
+        (tx) => tx`
+          INSERT INTO join_requests (academy_id, email, status, fulfilled_at)
+          VALUES ('org_A', 'privileged-column-fulfilled-at@student.com', 'pending', now())
+        `,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('rejects an insert that explicitly sets membership_id', async () => {
+    await expect(
+      asPublicRole(
+        (tx) => tx`
+          INSERT INTO join_requests (academy_id, email, status, membership_id)
+          VALUES ('org_A', 'privileged-column-membership-id@student.com', 'pending', NULL)
+        `,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('rejects an insert that explicitly sets id', async () => {
+    await expect(
+      asPublicRole(
+        (tx) => tx`
+          INSERT INTO join_requests (id, academy_id, email, status)
+          VALUES (gen_random_uuid(), 'org_A', 'privileged-column-id@student.com', 'pending')
+        `,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('rejects an insert that explicitly sets created_at', async () => {
+    await expect(
+      asPublicRole(
+        (tx) => tx`
+          INSERT INTO join_requests (academy_id, email, status, created_at)
+          VALUES ('org_A', 'privileged-column-created-at@student.com', 'pending', now())
+        `,
+      ),
+    ).rejects.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // PUBLIC path — join_requests SELECT (no grant at all)
 // ---------------------------------------------------------------------------
 
