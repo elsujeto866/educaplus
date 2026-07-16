@@ -25,4 +25,17 @@ export class DrizzlePublicAcademyRepository implements PublicAcademyPort {
       return { id: row.id, name: row.name, slug: row.slug };
     });
   }
+
+  async findAllPublished(): Promise<PublicAcademyView[]> {
+    return withPublicRole(async (tx) => {
+      // No WHERE on isPublic/deletedAt — RLS's `public_read` policy already
+      // scopes visible rows to published, non-deleted academies. Ordered by
+      // name for a stable, readable directory.
+      const rows = await tx
+        .select({ id: academies.id, name: academies.name, slug: academies.slug })
+        .from(academies)
+        .orderBy(academies.name);
+      return rows.map((row) => ({ id: row.id, name: row.name, slug: row.slug }));
+    });
+  }
 }

@@ -22,4 +22,10 @@ export interface PublicAcademyView {
 export interface PublicAcademyPort {
   /** Null when the slug does not resolve to a published, non-deleted academy. */
   findBySlug(slug: string): Promise<PublicAcademyView | null>;
+  /**
+   * Every published, non-deleted academy — powers the public directory at the
+   * root landing. RLS's `public_read` policy scopes the rows; the empty array
+   * is a valid result (no public academies yet).
+   */
+  findAllPublished(): Promise<PublicAcademyView[]>;
 }

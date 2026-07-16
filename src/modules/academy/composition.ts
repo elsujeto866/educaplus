@@ -10,6 +10,7 @@ import { SyncMembershipUseCase } from './application/sync-membership.use-case';
 import { DeleteAcademyUseCase } from './application/delete-academy.use-case';
 import { DeleteMembershipUseCase } from './application/delete-membership.use-case';
 import { GetPublicAcademyUseCase } from './application/get-public-academy.use-case';
+import { ListPublicAcademiesUseCase } from './application/list-public-academies.use-case';
 import { RequestAccessUseCase } from './application/request-access.use-case';
 import { ListPendingJoinRequestsUseCase } from './application/list-pending-join-requests.use-case';
 import { ApproveJoinRequestUseCase } from './application/approve-join-request.use-case';
@@ -24,6 +25,8 @@ export interface AcademyComposition {
   deleteMembership: DeleteMembershipUseCase;
   /** Public/untenanted path (design D1) — never receives TenantContext. */
   getPublicAcademy: GetPublicAcademyUseCase;
+  /** Public directory (untenanted) — lists every published academy. */
+  listPublicAcademies: ListPublicAcademiesUseCase;
   requestAccess: RequestAccessUseCase;
   /** Admin approval queue (Phase 3) — tenant path, admin/instructor only. */
   listPendingJoinRequests: ListPendingJoinRequestsUseCase;
@@ -55,6 +58,7 @@ export function makeAcademyComposition(): AcademyComposition {
     deleteAcademy: new DeleteAcademyUseCase(academyRepo),
     deleteMembership: new DeleteMembershipUseCase(membershipRepo),
     getPublicAcademy: new GetPublicAcademyUseCase(publicAcademyRepo),
+    listPublicAcademies: new ListPublicAcademiesUseCase(publicAcademyRepo),
     requestAccess: new RequestAccessUseCase(publicJoinRequestRepo),
     listPendingJoinRequests: new ListPendingJoinRequestsUseCase(joinRequestRepo),
     approveJoinRequest: new ApproveJoinRequestUseCase(joinRequestRepo, invitationAdapter),

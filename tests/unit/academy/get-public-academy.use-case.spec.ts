@@ -16,7 +16,7 @@ import type {
 } from '../../../src/modules/academy/domain/ports/public-academy.port';
 
 function makePort(): PublicAcademyPort {
-  return { findBySlug: vi.fn() };
+  return { findBySlug: vi.fn(), findAllPublished: vi.fn() };
 }
 
 describe('GetPublicAcademyUseCase', () => {
