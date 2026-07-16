@@ -1,28 +1,29 @@
 import type { TenantContext } from '@/shared/kernel/tenant-context';
-import { CoursesNavLink } from '../courses/_lib/courses-nav-link';
-import { SimulatorsNavLink } from '../simulators/_lib/simulators-nav-link';
-import { TracksNavLink } from '../simulators/_lib/tracks-nav-link';
+import { DashboardNavLinks, type NavItem } from './dashboard-nav-links';
 
 interface DashboardNavProps {
   ctx: TenantContext;
 }
 
 /**
- * Shared authoring nav — composes `CoursesNavLink` + `SimulatorsNavLink` +
- * `TracksNavLink` so every authoring page (`courses/**`, `simulators/**`)
- * renders the SAME nav fragment instead of hand-assembling it inline.
- * Fixes the bug where `courses/**` pages only rendered `CoursesNavLink`,
- * dropping the Simuladores/Pistas links whenever a learner-turned-instructor
- * navigated into Cursos. Each underlying link already role-gates itself for
- * `student` (returns `null`); this component performs no role logic of its
- * own — it is pure composition.
+ * Instructor/admin header nav. Owns the full item list and the role gate:
+ * students never see this nav (they get the learner home's own nav), so the
+ * whole fragment is hidden for `student` — matching the prior behavior where
+ * every individual link self-gated to null. Item order is the visible order:
+ * Inicio | Cursos | Simuladores | Rutas de estudio | Solicitudes. Active-state
+ * highlighting is delegated to the client `DashboardNavLinks`; keeping the
+ * list here (server) means the role decision never ships to the client.
  */
 export function DashboardNav({ ctx }: DashboardNavProps) {
-  return (
-    <>
-      <CoursesNavLink ctx={ctx} />
-      <SimulatorsNavLink ctx={ctx} />
-      <TracksNavLink ctx={ctx} />
-    </>
-  );
+  if (ctx.role === 'student') return null;
+
+  const items: NavItem[] = [
+    { href: '/dashboard', label: 'Inicio' },
+    { href: '/dashboard/courses', label: 'Cursos' },
+    { href: '/dashboard/simulators', label: 'Simuladores' },
+    { href: '/dashboard/simulators/tracks', label: 'Rutas de estudio' },
+    { href: '/dashboard/requests', label: 'Solicitudes' },
+  ];
+
+  return <DashboardNavLinks items={items} />;
 }
